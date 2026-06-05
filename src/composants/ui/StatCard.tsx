@@ -21,7 +21,7 @@ const gradients: Record<Color, string> = {
 
 export default function StatCard({ label, value, sub, icon: Icon, color = 'indigo' }: StatCardProps) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 shadow-md ${gradients[color]}`}>
+    <div className={`relative overflow-hidden rounded-2xl p-5 shadow-md transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl cursor-default ${gradients[color]}`}>
 
       {/* Top highlight line */}
       <div className="absolute top-0 inset-x-0 h-px bg-white/30" />

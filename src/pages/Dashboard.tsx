@@ -71,7 +71,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Attendance breakdown */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <h3 className="text-slate-800 font-semibold mb-4">{t.dashboard.todaysAttendance}</h3>
           <div className="space-y-3">
             {(['present','absent','late','excused'] as const).map(s => {
@@ -95,7 +95,7 @@ export default function Dashboard() {
         </div>
 
         {/* Fee collection */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <h3 className="text-slate-800 font-semibold mb-4">{t.dashboard.feeCollection}</h3>
           <div className="flex items-center gap-4 mb-4">
             <div className="relative w-20 h-20 shrink-0">
@@ -136,7 +136,7 @@ export default function Dashboard() {
         </div>
 
         {/* Report cards */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <h3 className="text-slate-800 font-semibold mb-4">{t.dashboard.reportCards}</h3>
           <div className="space-y-3">
             {reportCards.map(rc => (
@@ -161,7 +161,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Absent students */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-slate-800 font-semibold">{t.dashboard.absentToday}</h3>
             <span className="bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full">
@@ -193,7 +193,7 @@ export default function Dashboard() {
         </div>
 
         {/* Activity feed */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <h3 className="text-slate-800 font-semibold mb-4">{t.dashboard.recentActivity}</h3>
           <div className="space-y-3">
             {recentActivity.map((item, i) => {

@@ -55,14 +55,14 @@ export default function Fees() {
     <div className="space-y-5">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <div className="flex items-center gap-3 mb-1">
             <Banknote size={16} className="text-slate-400" />
             <p className="text-slate-500 text-sm">{t.fees.totalBilled}</p>
           </div>
           <p className="text-2xl font-bold text-slate-800">{totals.due.toLocaleString()} FCFA</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <div className="flex items-center gap-3 mb-1">
             <Banknote size={16} className="text-green-500" />
             <p className="text-slate-500 text-sm">{t.fees.collected}</p>
@@ -75,7 +75,7 @@ export default function Fees() {
             <p className="text-xs text-slate-400 mt-1">{pct}{t.fees.collectedPct}</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md cursor-default">
           <div className="flex items-center gap-3 mb-1">
             <Banknote size={16} className="text-orange-500" />
             <p className="text-slate-500 text-sm">{t.fees.outstanding}</p>
