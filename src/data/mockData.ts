@@ -354,7 +354,7 @@ export const teacherSchedule: TeacherScheduleEntry[] = [
     ['friday',    'p1','07:30–08:10','c4','Grade 3A','Mathematics'],
     ['friday',    'p5','10:30–11:10','c4','Grade 3A','General Science'],
     ['friday',    'p7','12:30–13:10','c5','Grade 4A','Mathematics'],
-  ] as const).map(([day, pk, time, cid, cname, sub], i) => ({
+  ] as const).map(([day, pk, time, cid, cname, sub]) => ({
     teacherId: 'tc2', day, periodKey: pk,
     periodLabel: `Period ${pk.slice(1)}`, time,
     classId: cid, className: cname, subjectName: sub,
@@ -377,7 +377,7 @@ export const teacherSchedule: TeacherScheduleEntry[] = [
     ['friday',    'p2','08:10–08:50','c1','Grade 1A','English Language'],
     ['friday',    'p4','09:50–10:30','c1','Grade 1A','Shona'],
     ['friday',    'p6','11:50–12:30','c1','Grade 1A','English Language'],
-  ] as const).map(([day, pk, time, cid, cname, sub], i) => ({
+  ] as const).map(([day, pk, time, cid, cname, sub]) => ({
     teacherId: 'tc3', day, periodKey: pk,
     periodLabel: `Period ${pk.slice(1)}`, time,
     classId: cid, className: cname, subjectName: sub, room: 'Room 1',

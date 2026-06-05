@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   X, Mail, Phone, Search, BookOpen,
-  Users, DoorOpen, GraduationCap, Calendar,
+  Users, GraduationCap, Calendar,
 } from 'lucide-react';
 import type { Class, Student, Teacher } from '../../types';
 import { useLanguage } from '../../i18n/LanguageContext';
