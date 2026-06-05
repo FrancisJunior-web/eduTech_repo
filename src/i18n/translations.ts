@@ -1,3 +1,9 @@
+export interface SubjectEntry {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export interface Translations {
   nav: {
     mainMenu: string; system: string; dashboard: string; students: string;
@@ -98,6 +104,9 @@ export interface Translations {
     minScore: string; maxScore: string; remark: string; schoolName: string;
     schoolCode: string; address: string; phone: string; email: string;
     headTeacher: string; motto: string;
+    feeSchedule: string; installment: string; totalAmount: string; feeScheduleHint: string;
+    subjects: string; subjectsHint: string; addSubject: string;
+    subjectName: string; subjectCode: string; deleteSubject: string; noSubjects: string;
   };
 }
 
@@ -227,6 +236,11 @@ export const en: Translations = {
     remark: 'Remark', schoolName: 'School Name', schoolCode: 'School Code',
     address: 'Address', phone: 'Phone', email: 'Email',
     headTeacher: 'Head Teacher', motto: 'Motto',
+    feeSchedule: 'Fee Payment Schedule', installment: 'Installment',
+    totalAmount: 'Total', feeScheduleHint: 'Amounts must sum to 100,000 FCFA',
+    subjects: 'Subjects', subjectsHint: 'Manage subjects used in the timetable and assessments',
+    addSubject: 'Add Subject', subjectName: 'Subject Name', subjectCode: 'Code (e.g. MTH)',
+    deleteSubject: 'Delete subject', noSubjects: 'No subjects defined yet.',
   },
 };
 
@@ -360,5 +374,10 @@ export const fr: Translations = {
     remark: 'Observation', schoolName: "Nom de l'école", schoolCode: "Code de l'école",
     address: 'Adresse', phone: 'Téléphone', email: 'Email',
     headTeacher: 'Directeur(trice)', motto: 'Devise',
+    feeSchedule: 'Calendrier des versements', installment: 'Versement',
+    totalAmount: 'Total', feeScheduleHint: 'Les montants doivent totaliser 100 000 FCFA',
+    subjects: 'Matières', subjectsHint: "Gérer les matières utilisées dans l'emploi du temps et les évaluations",
+    addSubject: 'Ajouter une matière', subjectName: 'Nom de la matière', subjectCode: 'Code (ex. MTH)',
+    deleteSubject: 'Supprimer la matière', noSubjects: 'Aucune matière définie.',
   },
 };

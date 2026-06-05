@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Users, GraduationCap, BookOpen, UserCheck, TrendingUp, AlertCircle, Search } from 'lucide-react';
 import StatCard from '../composants/ui/StatCard';
-import { dashboardStats, attendanceRecords, reportCards, feeRecords, students, school } from '../data/mockData';
+import { dashboardStats, attendanceRecords, reportCards, feeRecords, students } from '../data/mockData';
+import { useBranding } from '../context/BrandingContext';
 import { StatusBadge } from '../composants/ui/Badge';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -12,6 +13,7 @@ const feePercent   = feeTotal > 0 ? Math.round((feeCollected / feeTotal) * 100) 
 
 export default function Dashboard() {
   const { t, lang } = useLanguage();
+  const { schoolInfo } = useBranding();
 
   const recentActivity = [
     { text: lang === 'fr' ? '3 nouveaux bulletins publiés pour la Grade 5A' : '3 new report cards published for Grade 5A', time: lang === 'fr' ? 'Il y a 2h' : '2 hours ago', type: 'success' },
@@ -53,9 +55,9 @@ export default function Dashboard() {
       {/* Welcome banner */}
       <div className="bg-linear-to-r from-indigo-600 to-indigo-500 rounded-xl px-6 py-5 text-white">
         <p className="text-indigo-100 text-sm">{t.dashboard.welcomeBack}</p>
-        <h2 className="text-xl font-bold mt-0.5">{school.headTeacher} &nbsp;·&nbsp; {school.name}</h2>
+        <h2 className="text-xl font-bold mt-0.5">{schoolInfo.headTeacher} &nbsp;·&nbsp; {schoolInfo.name}</h2>
         <p className="text-indigo-200 text-sm mt-1">
-          {school.motto} &nbsp;|&nbsp; {lang === 'fr' ? 'Trimestre 2' : 'Term 2'} · 2025/2026
+          {schoolInfo.motto} &nbsp;|&nbsp; {lang === 'fr' ? 'Trimestre 2' : 'Term 2'} · 2025/2026
         </p>
       </div>
 

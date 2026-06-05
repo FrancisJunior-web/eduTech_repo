@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { Save, CheckCircle, X, Pencil, Plus, RotateCcw, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { classes, subjects, teachers } from '../data/mockData';
+import { classes, subjects as defaultSubjects, teachers } from '../data/mockData';
+import type { Subject } from '../types';
+
+function loadSubjects(): Subject[] {
+  try {
+    const s = localStorage.getItem('subjects');
+    if (s) return JSON.parse(s) as Subject[];
+  } catch { /* ignore */ }
+  return defaultSubjects;
+}
 import { useLanguage } from '../i18n/LanguageContext';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -57,8 +66,8 @@ function emptyGrid(): ClassGrid {
 }
 
 // Pre-fill a class grid with sample data (subject name only)
-function sampleGrid(classIdx: number, classRoom: string): ClassGrid {
-  const subs = subjects.map(s => s.name);
+function sampleGrid(classIdx: number, classRoom: string, subjectList: Subject[]): ClassGrid {
+  const subs = subjectList.map(s => s.name);
   const g: ClassGrid = {};
   DAYS_EN.forEach((day, di) => {
     g[day] = {};
@@ -75,11 +84,12 @@ function sampleGrid(classIdx: number, classRoom: string): ClassGrid {
 
 // ── Cell Editor Modal ────────────────────────────────────────────
 function CellEditorModal({
-  editing, current, classRoom, onApply, onClear, onClose,
+  editing, current, classRoom, subjects, onApply, onClear, onClose,
 }: {
   editing: Editing;
   current: Cell | null;
   classRoom: string;
+  subjects: Subject[];
   onApply: (cell: Cell) => void;
   onClear: () => void;
   onClose: () => void;
@@ -203,11 +213,13 @@ export default function Timetable() {
   const [classId,   setClassId]  = useState(classes[0].id);
   const [editing,   setEditing]  = useState<Editing | null>(null);
   const [saved,     setSaved]    = useState(false);
+  const [subjects]               = useState<Subject[]>(loadSubjects);
 
   // Per-class grids — lazy-initialised with sample data on first access
   const [allGrids, setAllGrids] = useState<AllGrids>(() => {
+    const subs = loadSubjects();
     const init: AllGrids = {};
-    classes.forEach((cls, i) => { init[cls.id] = sampleGrid(i, cls.room); });
+    classes.forEach((cls, i) => { init[cls.id] = sampleGrid(i, cls.room, subs); });
     return init;
   });
 
@@ -262,7 +274,7 @@ export default function Timetable() {
   const handleReset = () => {
     setAllGrids(prev => ({
       ...prev,
-      [classId]: sampleGrid(classes.findIndex(c => c.id === classId), cls.room),
+      [classId]: sampleGrid(classes.findIndex(c => c.id === classId), cls.room, subjects),
     }));
     setSaved(false);
   };
@@ -549,6 +561,7 @@ export default function Timetable() {
           editing={editing}
           current={grid[editing.day]?.[editing.periodKey] ?? null}
           classRoom={cls.room}
+          subjects={subjects}
           onApply={applyEdit}
           onClear={clearCell}
           onClose={() => setEditing(null)}

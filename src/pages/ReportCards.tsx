@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Printer, Eye, Award, X } from 'lucide-react';
-import { reportCards, school } from '../data/mockData';
+import { reportCards } from '../data/mockData';
+import { useBranding } from '../context/BrandingContext';
 import type { ReportCard } from '../types';
 import { StatusBadge } from '../composants/ui/Badge';
 import { clsx } from 'clsx';
@@ -13,6 +14,7 @@ const gradeColor: Record<string, string> = {
 
 function PrintableReportCard({ rc }: { rc: ReportCard }) {
   const { t } = useLanguage();
+  const { schoolInfo } = useBranding();
 
   const termLabel =
     rc.termName === 'first'  ? t.reportCards.term1 :
@@ -29,9 +31,9 @@ function PrintableReportCard({ rc }: { rc: ReportCard }) {
         <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-2">
           <Award size={28} className="text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{school.name}</h1>
-        <p className="text-slate-600 text-sm italic">{school.motto}</p>
-        <p className="text-slate-500 text-xs mt-1">{school.address} · {school.phone}</p>
+        <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-wide">{schoolInfo.name}</h1>
+        <p className="text-slate-600 text-sm italic">{schoolInfo.motto}</p>
+        <p className="text-slate-500 text-xs mt-1">{schoolInfo.address} · {schoolInfo.phone}</p>
         <div className="mt-3 bg-indigo-700 text-white text-sm font-bold py-1.5 px-4 rounded inline-block uppercase tracking-widest">
           {t.reportCards.studentProgressReport}
         </div>
@@ -55,7 +57,7 @@ function PrintableReportCard({ rc }: { rc: ReportCard }) {
           {[
             { label: t.reportCards.academicYear, val: rc.academicYear       },
             { label: t.common.term,              val: termLabel             },
-            { label: t.reportCards.headTeacher,  val: school.headTeacher    },
+            { label: t.reportCards.headTeacher,  val: schoolInfo.headTeacher    },
           ].map(f => (
             <div key={f.label} className="flex gap-2">
               <span className="text-slate-500 w-32 shrink-0">{f.label}:</span>
@@ -144,7 +146,7 @@ function PrintableReportCard({ rc }: { rc: ReportCard }) {
 
       {/* Footer */}
       <div className="mt-4 text-center text-xs text-slate-400 border-t border-slate-200 pt-2">
-        <p>{t.reportCards.footer} · {school.name}</p>
+        <p>{t.reportCards.footer} · {schoolInfo.name}</p>
       </div>
     </div>
   );
