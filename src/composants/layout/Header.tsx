@@ -1,22 +1,39 @@
-import { Bell, Search, ChevronDown, Globe } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Bell, Search, Globe, LogOut, ChevronDown } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Header() {
-  const { pathname } = useLocation();
+  const { pathname }        = useLocation();
   const { lang, setLang, t } = useLanguage();
+  const { user, logout }    = useAuth();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const titles: Record<string, string> = {
-    '/dashboard':    t.header.dashboard,
-    '/students':     t.header.students,
-    '/classes':      t.header.classes,
-    '/teachers':     t.header.teachers,
-    '/attendance':   t.header.attendance,
-    '/assessments':  t.header.assessments,
-    '/report-cards': t.header.reportCards,
-    '/fees':         t.header.fees,
-    '/timetable':    t.header.timetable,
-    '/parents':      t.header.parents,
+    '/dashboard':         t.header.dashboard,
+    '/students':          t.header.students,
+    '/classes':           t.header.classes,
+    '/teachers':          t.header.teachers,
+    '/attendance':        t.header.attendance,
+    '/assessments':       t.header.assessments,
+    '/report-cards':      t.header.reportCards,
+    '/fees':              t.header.fees,
+    '/timetable':         t.header.timetable,
+    '/parents':           t.header.parents,
     '/settings':          t.header.settings,
     '/announcements':     t.header.announcements,
     '/email-alerts':      t.header.emailAlerts,
@@ -45,24 +62,18 @@ export default function Header() {
           <button
             onClick={() => setLang('en')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-              lang === 'en'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+              lang === 'en' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <Globe size={11} />
-            EN
+            <Globe size={11} /> EN
           </button>
           <button
             onClick={() => setLang('fr')}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-              lang === 'fr'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+              lang === 'fr' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <Globe size={11} />
-            FR
+            <Globe size={11} /> FR
           </button>
         </div>
 
@@ -72,17 +83,42 @@ export default function Header() {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
         </button>
 
-        {/* User */}
-        <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-            <span className="text-indigo-700 font-semibold text-xs">GM</span>
-          </div>
-          <div className="hidden sm:block text-left">
-            <p className="text-sm font-medium text-slate-800 leading-tight">Grace Moyo</p>
-            <p className="text-xs text-slate-500">{t.header.headTeacher}</p>
-          </div>
-          <ChevronDown size={14} className="text-slate-400" />
-        </button>
+        {/* User avatar + dropdown */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+              <span className="text-white font-semibold text-xs">{user?.initials ?? '??'}</span>
+            </div>
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-slate-800 leading-tight">{user?.name ?? ''}</p>
+              <p className="text-xs text-slate-500">{user?.role ?? ''}</p>
+            </div>
+            <ChevronDown size={14} className={`text-slate-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown */}
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <p className="text-sm font-semibold text-slate-800">{user?.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{user?.email}</p>
+                <span className="inline-block mt-1.5 text-[10px] font-medium bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                  {user?.role}
+                </span>
+              </div>
+              <button
+                onClick={() => { setMenuOpen(false); logout(); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut size={15} />
+                {lang === 'fr' ? 'Se déconnecter' : 'Sign out'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
