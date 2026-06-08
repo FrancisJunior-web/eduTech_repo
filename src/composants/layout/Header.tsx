@@ -17,7 +17,10 @@ export default function Header() {
     '/fees':         t.header.fees,
     '/timetable':    t.header.timetable,
     '/parents':      t.header.parents,
-    '/settings':     t.header.settings,
+    '/settings':          t.header.settings,
+    '/announcements':     t.header.announcements,
+    '/email-alerts':      t.header.emailAlerts,
+    '/discussion-forums': t.header.discussionForums,
   };
 
   const title = titles[pathname] ?? 'School Management';

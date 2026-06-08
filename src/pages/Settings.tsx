@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Upload, X, CalendarDays, AlertTriangle, CheckCircle2, BookOpen, Trash2, Plus, Pencil, Check } from 'lucide-react';
-import { subjects as defaultSubjects } from '../data/mockData';
+import { Upload, X, CalendarDays, AlertTriangle, CheckCircle2, BookOpen, Trash2, Plus, Pencil, Check, Download, Database, FileUp } from 'lucide-react';
+import { subjects as defaultSubjects, students, teachers, classes as classesData, marks, feeRecords } from '../data/mockData';
 import type { Subject } from '../types';
 
 interface FeeInstallment {
@@ -34,6 +34,23 @@ function loadSubjects(): Subject[] {
 import { useLanguage } from '../i18n/LanguageContext';
 import { useBranding } from '../context/BrandingContext';
 
+// ── Backup helpers ─────────────────────────────────────────────────────────
+function toCSV(headers: string[], rows: (string | number | boolean | null | undefined)[][]): string {
+  const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  return [headers.map(esc), ...rows.map(r => r.map(esc))].join('\r\n');
+}
+
+function downloadFile(filename: string, content: string, mime = 'text/csv') {
+  const bom  = mime.includes('csv') ? '﻿' : '';
+  const blob = new Blob([bom + content], { type: `${mime};charset=utf-8;` });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function Settings() {
   const { t, lang } = useLanguage();
   const { logoUrl, schoolName, schoolSub, schoolInfo, setLogoUrl, setSchoolName, setSchoolSub, setSchoolInfo } = useBranding();
@@ -47,8 +64,12 @@ export default function Settings() {
   const [infoSaved,    setInfoSaved]    = useState(false);
   const [gradeSaved,   setGradeSaved]   = useState(false);
   const [feeSaved,     setFeeSaved]     = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging]     = useState(false);
+  const [dragImport, setDragImport] = useState(false);
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [importMsg, setImportMsg]   = useState('');
+  const fileRef   = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
 
   // Subjects state
   const [subjectList,  setSubjectList]  = useState<Subject[]>(loadSubjects);
@@ -131,6 +152,85 @@ export default function Settings() {
         : s
     ));
     setEditingSubId(null);
+  };
+
+  // ── CSV / JSON exports ──────────────────────────────────────────────────
+  const exportStudentsCSV = () => downloadFile('students.csv', toCSV(
+    ['Student Number','First Name','Last Name','Date of Birth','Gender','Class','Grade Level','Guardian Name','Guardian Phone','Admission Date','Active'],
+    students.map(s => [s.studentNumber,s.firstName,s.lastName,s.dateOfBirth,s.gender,s.className,s.gradeLevelName,s.guardianName,s.guardianPhone,s.admissionDate,s.isActive]),
+  ));
+
+  const exportTeachersCSV = () => downloadFile('teachers.csv', toCSV(
+    ['First Name','Last Name','Email','Phone','Gender','Subjects','Class Assigned','Qualification','Join Date','Active'],
+    teachers.map(t => [t.firstName,t.lastName,t.email,t.phone,t.gender,t.subjects.join('; '),t.classAssigned ?? '',t.qualification,t.joinDate,t.isActive]),
+  ));
+
+  const exportClassesCSV = () => downloadFile('classes.csv', toCSV(
+    ['Class Name','Grade Level','Room','Capacity','Enrolled','Class Teacher'],
+    classesData.map(c => [c.name,c.gradeLevelName,c.room,c.capacity,c.enrolled,c.classTeacherName]),
+  ));
+
+  const exportMarksCSV = () => downloadFile('marks.csv', toCSV(
+    ['Student Name','Student Number','Subject','CA Score','Exam Score','Total Score','Grade','Remark'],
+    marks.map(m => [m.studentName,m.studentNumber,m.subjectName,m.caScore,m.examScore,m.totalScore,m.grade,m.remark]),
+  ));
+
+  const exportFeesCSV = () => downloadFile('fees.csv', toCSV(
+    ['Student Name','Student Number','Class','Fee Name','Academic Year','Amount Due','Amount Paid','Balance','Status','Due Date'],
+    feeRecords.map(f => [f.studentName,f.studentNumber,f.className,f.feeName,f.academicYear,f.amountDue,f.amountPaid,f.balance,f.status,f.dueDate]),
+  ));
+
+  const exportFullBackup = () => {
+    const backup = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      branding: { schoolName: name, schoolSub: sub, logoUrl, schoolInfo: info },
+      feeInstallments: installments,
+      subjects: subjectList,
+      students,
+      teachers,
+      classes: classesData,
+      marks,
+      feeRecords,
+    };
+    downloadFile('school-backup.json', JSON.stringify(backup, null, 2), 'application/json');
+  };
+
+  const handleImportFile = (file: File) => {
+    setImportStatus('idle');
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const backup = JSON.parse(e.target?.result as string);
+        if (backup.version !== '1.0') throw new Error('unsupported version');
+
+        const restored: string[] = [];
+        if (backup.subjects) {
+          localStorage.setItem('subjects', JSON.stringify(backup.subjects));
+          setSubjectList(backup.subjects);
+          restored.push(`${backup.subjects.length} ${lbl('subjects', 'matières')}`);
+        }
+        if (backup.feeInstallments) {
+          localStorage.setItem('fee_installments', JSON.stringify(backup.feeInstallments));
+          setInstallments(backup.feeInstallments);
+          restored.push(lbl('fee schedule', 'calendrier des frais'));
+        }
+        if (backup.branding) {
+          const b = backup.branding;
+          if (b.schoolName)  { setSchoolName(b.schoolName);  setName(b.schoolName); }
+          if (b.schoolSub !== undefined) { setSchoolSub(b.schoolSub); setSub(b.schoolSub); }
+          if (b.logoUrl !== undefined)   setLogoUrl(b.logoUrl);
+          if (b.schoolInfo)  { setSchoolInfo(b.schoolInfo);  setInfo(b.schoolInfo); }
+          restored.push(lbl('branding & school info', 'identité & infos école'));
+        }
+        setImportStatus('success');
+        setImportMsg(lbl(`Restored: ${restored.join(', ')}`, `Restauré : ${restored.join(', ')}`));
+      } catch {
+        setImportStatus('error');
+        setImportMsg(lbl('Invalid file. Please use a .json backup exported from this app.', 'Fichier invalide. Utilisez un fichier .json exporté depuis cette application.'));
+      }
+    };
+    reader.readAsText(file);
   };
 
   const gradingScale = [
@@ -503,6 +603,114 @@ export default function Settings() {
             <CheckCircle2 size={15} /> {t.common.saved}
           </p>
         )}
+      </div>
+
+      {/* ── Backup & Restore ─────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <Database size={16} className="text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800">{lbl('Backup & Restore', 'Sauvegarde & Restauration')}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {lbl('Export data as CSV files or create a full JSON backup you can restore later.', 'Exportez les données en CSV ou créez une sauvegarde JSON complète pour la restaurer plus tard.')}
+            </p>
+          </div>
+        </div>
+
+        {/* Export */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+            {lbl('Export Data', 'Exporter les données')}
+          </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {([
+              { label: lbl('Students', 'Élèves'),   fn: exportStudentsCSV },
+              { label: lbl('Teachers', 'Enseignants'), fn: exportTeachersCSV },
+              { label: lbl('Classes', 'Classes'),   fn: exportClassesCSV  },
+              { label: lbl('Marks', 'Notes'),       fn: exportMarksCSV    },
+              { label: lbl('Fees', 'Frais'),        fn: exportFeesCSV     },
+            ] as const).map(({ label, fn }) => (
+              <button
+                key={label}
+                onClick={fn}
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 px-3 py-2 rounded-lg transition-colors"
+              >
+                <Download size={13} className="text-slate-400" />
+                {label} <span className="text-slate-400 font-normal text-xs">.csv</span>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={exportFullBackup}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Download size={14} />
+            {lbl('Full Backup (.json)', 'Sauvegarde complète (.json)')}
+          </button>
+        </div>
+
+        <div className="border-t border-slate-100" />
+
+        {/* Import */}
+        <div>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+            {lbl('Import / Restore', 'Importer / Restaurer')}
+          </p>
+
+          <div
+            onClick={() => importRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragImport(true); }}
+            onDragLeave={() => setDragImport(false)}
+            onDrop={e => {
+              e.preventDefault(); setDragImport(false);
+              const f = e.dataTransfer.files[0];
+              if (f) handleImportFile(f);
+            }}
+            className={[
+              'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed cursor-pointer py-8 transition-colors',
+              dragImport ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50',
+            ].join(' ')}
+          >
+            <FileUp size={24} className={dragImport ? 'text-indigo-500' : 'text-slate-400'} />
+            <p className="text-sm font-medium text-slate-600">
+              {lbl('Drop a .json backup here, or click to browse', 'Déposez un fichier .json ici, ou cliquez pour parcourir')}
+            </p>
+            <p className="text-xs text-slate-400">
+              {lbl('Restores: subjects, fee schedule, branding & school info', 'Restaure : matières, calendrier des frais, identité & infos école')}
+            </p>
+          </div>
+
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (f) handleImportFile(f);
+              e.target.value = '';
+            }}
+          />
+
+          {importStatus !== 'idle' && (
+            <div className={[
+              'mt-3 flex items-start gap-2 text-sm rounded-lg px-4 py-3',
+              importStatus === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200',
+            ].join(' ')}>
+              {importStatus === 'success'
+                ? <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+                : <AlertTriangle size={16} className="shrink-0 mt-0.5" />}
+              {importMsg}
+            </div>
+          )}
+
+          <p className="text-xs text-slate-400 mt-3 flex items-center gap-1">
+            <AlertTriangle size={11} />
+            {lbl('Note: student and teacher records are read-only in the current version.', 'Note : les données élèves et enseignants sont en lecture seule dans cette version.')}
+          </p>
+        </div>
       </div>
 
       {/* ── Grading Scale ─────────────────────────────────────── */}

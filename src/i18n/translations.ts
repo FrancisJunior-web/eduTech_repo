@@ -10,11 +10,13 @@ export interface Translations {
     classes: string; teachers: string; attendance: string; assessments: string;
     reportCards: string; fees: string; timetable: string; parents: string;
     settings: string; currentTerm: string;
+    communication: string; announcements: string; emailAlerts: string; discussionForums: string;
   };
   header: {
     dashboard: string; students: string; classes: string; teachers: string;
     attendance: string; assessments: string; reportCards: string; fees: string;
     timetable: string; parents: string; settings: string; search: string; headTeacher: string;
+    announcements: string; emailAlerts: string; discussionForums: string;
   };
   common: {
     search: string; add: string; save: string; edit: string; view: string;
@@ -73,7 +75,7 @@ export interface Translations {
     class: string; subject: string; term: string; saveMarks: string;
     classAverage: string; passed: string; failed: string;
     caOutOf: string; examOutOf: string; totalOutOf: string;
-    grade: string; remark: string; caExamFormula: string;
+    grade: string; remark: string;
   };
   reportCards: {
     printAll: string; preview: string; closePreview: string;
@@ -117,12 +119,14 @@ export const en: Translations = {
     attendance: 'Attendance', assessments: 'Assessments',
     reportCards: 'Report Cards', fees: 'Fees', timetable: 'Timetable',
     parents: 'Parents', settings: 'Settings', currentTerm: 'Current Term',
+    communication: 'Communication', announcements: 'Announcements', emailAlerts: 'Email Alerts', discussionForums: 'Discussion Forums',
   },
   header: {
     dashboard: 'Dashboard', students: 'Students', classes: 'Classes',
     teachers: 'Teachers', attendance: 'Attendance', assessments: 'Assessments',
     reportCards: 'Report Cards', fees: 'Fees & Payments', timetable: 'Timetable',
     parents: 'Parents & Guardians', settings: 'Settings', search: 'Search...', headTeacher: 'Head Teacher',
+    announcements: 'Announcements / Notices', emailAlerts: 'Email Alerts', discussionForums: 'Discussion Forums',
   },
   common: {
     search: 'Search', add: 'Add', save: 'Save', edit: 'Edit', view: 'View',
@@ -199,7 +203,7 @@ export const en: Translations = {
     class: 'Class', subject: 'Subject', term: 'Term', saveMarks: 'Save Marks',
     classAverage: 'Class Average', passed: 'Passed', failed: 'Failed',
     caOutOf: 'CA /40', examOutOf: 'Exam /60', totalOutOf: 'Total',
-    grade: 'Grade', remark: 'Remark', caExamFormula: 'CA (40) + Exam (60) = Total (100)',
+    grade: 'Grade', remark: 'Remark',
   },
   reportCards: {
     printAll: 'Print All', preview: 'Preview', closePreview: 'Close Preview',
@@ -251,6 +255,7 @@ export const fr: Translations = {
     attendance: 'Présences', assessments: 'Évaluations',
     reportCards: 'Bulletins', fees: 'Frais', timetable: 'Emploi du temps',
     parents: 'Parents', settings: 'Paramètres', currentTerm: 'Trimestre en cours',
+    communication: 'Communication', announcements: 'Annonces', emailAlerts: 'Alertes Email', discussionForums: 'Forums de Discussion',
   },
   header: {
     dashboard: 'Tableau de bord', students: 'Élèves', classes: 'Classes',
@@ -258,6 +263,7 @@ export const fr: Translations = {
     reportCards: 'Bulletins', fees: 'Frais & Paiements',
     timetable: 'Emploi du temps', parents: 'Parents & Tuteurs',
     settings: 'Paramètres', search: 'Rechercher...', headTeacher: 'Directeur(trice)',
+    announcements: 'Annonces / Avis', emailAlerts: 'Alertes Email', discussionForums: 'Forums de Discussion',
   },
   common: {
     search: 'Rechercher', add: 'Ajouter', save: 'Enregistrer', edit: 'Modifier',
@@ -337,7 +343,6 @@ export const fr: Translations = {
     saveMarks: 'Enregistrer les notes', classAverage: 'Moyenne de classe',
     passed: 'Admis', failed: 'Recalés', caOutOf: 'CC /40', examOutOf: 'Examen /60',
     totalOutOf: 'Total', grade: 'Note', remark: 'Observation',
-    caExamFormula: 'CC (40) + Examen (60) = Total (100)',
   },
   reportCards: {
     printAll: 'Tout imprimer', preview: 'Aperçu', closePreview: "Fermer l'aperçu",

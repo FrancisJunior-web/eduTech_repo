@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, GraduationCap, BookOpen, UserCheck, TrendingUp, AlertCircle, Search } from 'lucide-react';
 import StatCard from '../composants/ui/StatCard';
 import { dashboardStats, attendanceRecords, reportCards, feeRecords, students } from '../data/mockData';
@@ -14,6 +15,7 @@ const feePercent   = feeTotal > 0 ? Math.round((feeCollected / feeTotal) * 100) 
 export default function Dashboard() {
   const { t, lang } = useLanguage();
   const { schoolInfo } = useBranding();
+  const navigate = useNavigate();
 
   const recentActivity = [
     { text: lang === 'fr' ? '3 nouveaux bulletins publiés pour la Grade 5A' : '3 new report cards published for Grade 5A', time: lang === 'fr' ? 'Il y a 2h' : '2 hours ago', type: 'success' },
@@ -63,10 +65,10 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t.dashboard.totalStudents}  value={dashboardStats.totalStudents} sub={t.dashboard.enrolledThisYear} icon={Users}         color="indigo"  />
-        <StatCard label={t.dashboard.teachers}       value={dashboardStats.totalTeachers} sub={t.dashboard.activeStaff}      icon={GraduationCap} color="blue"    />
-        <StatCard label={t.dashboard.classes}        value={dashboardStats.totalClasses}  sub={t.dashboard.activeStreams}     icon={BookOpen}      color="purple"  />
-        <StatCard label={t.dashboard.attendanceToday} value={`${dashboardStats.attendanceRate}%`} sub={t.dashboard.presentToday} icon={UserCheck} color="green"   />
+        <StatCard label={t.dashboard.totalStudents}   value={dashboardStats.totalStudents}          sub={t.dashboard.enrolledThisYear} icon={Users}         color="indigo" onClick={() => navigate('/students')}    />
+        <StatCard label={t.dashboard.teachers}        value={dashboardStats.totalTeachers}          sub={t.dashboard.activeStaff}      icon={GraduationCap} color="blue"   onClick={() => navigate('/teachers')}    />
+        <StatCard label={t.dashboard.classes}         value={dashboardStats.totalClasses}           sub={t.dashboard.activeStreams}     icon={BookOpen}      color="purple" onClick={() => navigate('/classes')}     />
+        <StatCard label={t.dashboard.attendanceToday} value={`${dashboardStats.attendanceRate}%`}   sub={t.dashboard.presentToday}     icon={UserCheck}     color="green"  onClick={() => navigate('/attendance')}  />
       </div>
 
       {/* Middle row */}

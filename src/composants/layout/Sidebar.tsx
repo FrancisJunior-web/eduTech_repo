@@ -1,15 +1,21 @@
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap,
   ClipboardCheck, FileText, Award, Wallet, Calendar, UserRound, Settings,
+  MessageSquare, Megaphone, Mail, MessageCircle, ChevronDown,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useBranding } from '../../context/BrandingContext';
 
+const COMM_PATHS = ['/announcements', '/email-alerts', '/discussion-forums'];
+
 export default function Sidebar() {
   const { t, lang } = useLanguage();
   const { logoUrl, schoolName, schoolSub } = useBranding();
+  const { pathname } = useLocation();
+  const [commOpen, setCommOpen] = useState(() => COMM_PATHS.includes(pathname));
 
   const nav = [
     { label: t.nav.dashboard,    to: '/dashboard',    icon: LayoutDashboard },
@@ -64,6 +70,61 @@ export default function Sidebar() {
             {label}
           </NavLink>
         ))}
+
+        {/* Communication group */}
+        <div className="pt-4">
+          <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest px-3 mb-2">
+            {t.nav.communication}
+          </p>
+          <button
+            onClick={() => setCommOpen(o => !o)}
+            className={clsx(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              COMM_PATHS.includes(pathname)
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            )}
+          >
+            <MessageSquare size={17} />
+            <span className="flex-1 text-left">{t.nav.communication}</span>
+            <ChevronDown size={14} className={clsx('transition-transform', commOpen ? 'rotate-180' : '')} />
+          </button>
+
+          {commOpen && (
+            <div className="mt-0.5 ml-3 border-l border-slate-700 pl-3 space-y-0.5">
+              <NavLink
+                to="/announcements"
+                className={({ isActive }) =>
+                  clsx('flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white')
+                }
+              >
+                <Megaphone size={15} />
+                {t.nav.announcements}
+              </NavLink>
+              <NavLink
+                to="/email-alerts"
+                className={({ isActive }) =>
+                  clsx('flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white')
+                }
+              >
+                <Mail size={15} />
+                {t.nav.emailAlerts}
+              </NavLink>
+              <NavLink
+                to="/discussion-forums"
+                className={({ isActive }) =>
+                  clsx('flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white')
+                }
+              >
+                <MessageCircle size={15} />
+                {t.nav.discussionForums}
+              </NavLink>
+            </div>
+          )}
+        </div>
 
         <div className="pt-4">
           <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-widest px-3 mb-2">

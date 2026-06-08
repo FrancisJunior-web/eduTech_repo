@@ -8,6 +8,7 @@ interface StatCardProps {
   sub?: string;
   icon: LucideIcon;
   color?: Color;
+  onClick?: () => void;
 }
 
 const gradients: Record<Color, string> = {
@@ -19,9 +20,17 @@ const gradients: Record<Color, string> = {
   purple: 'bg-linear-to-br from-violet-600 to-purple-400',
 };
 
-export default function StatCard({ label, value, sub, icon: Icon, color = 'indigo' }: StatCardProps) {
+export default function StatCard({ label, value, sub, icon: Icon, color = 'indigo', onClick }: StatCardProps) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 shadow-md transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl cursor-default ${gradients[color]}`}>
+    <div
+      onClick={onClick}
+      className={[
+        'relative overflow-hidden rounded-2xl p-5 shadow-md',
+        'transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
+        onClick ? 'cursor-pointer active:scale-95 select-none' : 'cursor-default',
+        gradients[color],
+      ].join(' ')}
+    >
 
       {/* Top highlight line */}
       <div className="absolute top-0 inset-x-0 h-px bg-white/30" />

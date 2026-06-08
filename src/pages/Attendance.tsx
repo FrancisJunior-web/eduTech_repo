@@ -26,6 +26,7 @@ export default function Attendance() {
   const [date, setDate]         = useState(today);
   const [classId, setClassId]   = useState(classes[0].id);
   const [saved, setSaved]       = useState(false);
+  const [filter, setFilter]     = useState<AttendanceStatus | 'all'>('all');
 
   const classStudents = students.filter(s => s.classId === classId);
 
@@ -41,7 +42,12 @@ export default function Attendance() {
     students.filter(s => s.classId === id).forEach(s => { next[s.id] = 'present'; });
     setAttendance(next);
     setSaved(false);
+    setFilter('all');
   };
+
+  const visibleStudents = filter === 'all'
+    ? classStudents
+    : classStudents.filter(s => attendance[s.id] === filter);
 
   const mark = (studentId: string, status: AttendanceStatus) => {
     setAttendance(prev => ({ ...prev, [studentId]: status }));
@@ -100,18 +106,50 @@ export default function Attendance() {
         </div>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-3">
-        {(Object.entries(counts) as [AttendanceStatus, number][]).map(([status, count]) => {
-          const cfg = statusConfig[status];
-          return (
-            <div key={status} className={clsx('rounded-xl p-4 text-center border', cfg.bg)}>
-              <p className={clsx('text-2xl font-bold', cfg.color)}>{count}</p>
-              <p className={clsx('text-sm font-medium', cfg.color)}>{statusLabels[status]}</p>
-            </div>
-          );
-        })}
-      </div>
+      {/* Summary KPIs */}
+      {(() => {
+        const kpiConfig: { status: AttendanceStatus; activeBg: string; activeShadow: string; hoverBorder: string; hoverShadow: string; iconActive: string; numActive: string; labelActive: string; numDefault: string; blob: string }[] = [
+          { status: 'present', activeBg: 'bg-emerald-500 border-emerald-500', activeShadow: 'shadow-emerald-200', hoverBorder: 'hover:border-emerald-300', hoverShadow: 'hover:shadow-emerald-100', iconActive: 'text-emerald-100', numActive: 'text-white', labelActive: 'text-emerald-100', numDefault: 'text-emerald-600', blob: 'bg-emerald-400' },
+          { status: 'absent',  activeBg: 'bg-red-500 border-red-500',         activeShadow: 'shadow-red-200',     hoverBorder: 'hover:border-red-300',     hoverShadow: 'hover:shadow-red-100',     iconActive: 'text-red-100',     numActive: 'text-white', labelActive: 'text-red-100',     numDefault: 'text-red-500',   blob: 'bg-red-400'     },
+          { status: 'late',    activeBg: 'bg-amber-400 border-amber-400',      activeShadow: 'shadow-amber-200',   hoverBorder: 'hover:border-amber-300',   hoverShadow: 'hover:shadow-amber-100',   iconActive: 'text-amber-100',   numActive: 'text-white', labelActive: 'text-amber-100',   numDefault: 'text-amber-500', blob: 'bg-amber-300'   },
+          { status: 'excused', activeBg: 'bg-blue-500 border-blue-500',        activeShadow: 'shadow-blue-200',    hoverBorder: 'hover:border-blue-300',    hoverShadow: 'hover:shadow-blue-100',    iconActive: 'text-blue-100',    numActive: 'text-white', labelActive: 'text-blue-100',    numDefault: 'text-blue-500',  blob: 'bg-blue-400'    },
+        ];
+        return (
+          <div className="grid grid-cols-4 gap-3">
+            {kpiConfig.map(({ status, activeBg, activeShadow, hoverBorder, hoverShadow, iconActive, numActive, labelActive, numDefault, blob }) => {
+              const cfg = statusConfig[status];
+              const Icon = cfg.icon;
+              const isActive = filter === status;
+              return (
+                <div
+                  key={status}
+                  onClick={() => setFilter(f => f === status ? 'all' : status)}
+                  className={clsx(
+                    'relative overflow-hidden rounded-xl border p-4 cursor-pointer select-none',
+                    'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg group',
+                    isActive
+                      ? clsx(activeBg, 'shadow-md', activeShadow)
+                      : clsx('bg-white border-slate-200', hoverBorder, hoverShadow),
+                  )}
+                >
+                  <div className={clsx('absolute -right-3 -top-3 w-16 h-16 rounded-full opacity-10', isActive ? 'bg-white' : blob)} />
+                  <Icon
+                    size={20}
+                    className={clsx('mb-2 transition-colors', isActive ? iconActive : clsx(cfg.color, 'opacity-80 group-hover:opacity-100'))}
+                  />
+                  <p className={clsx('text-2xl font-bold transition-colors', isActive ? numActive : numDefault)}>
+                    {counts[status]}
+                  </p>
+                  <p className={clsx('text-sm mt-0.5 font-medium transition-colors', isActive ? labelActive : 'text-slate-500')}>
+                    {statusLabels[status]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
 
       {/* Attendance sheet */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -120,7 +158,11 @@ export default function Attendance() {
             <h3 className="font-semibold text-slate-800">
               {classes.find(c => c.id === classId)?.name} · {new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </h3>
-            <p className="text-xs text-slate-400">{classStudents.length} {t.attendance.students}</p>
+            <p className="text-xs text-slate-400">
+              {filter === 'all'
+                ? `${classStudents.length} ${t.attendance.students}`
+                : `${visibleStudents.length} / ${classStudents.length} ${t.attendance.students} · ${statusLabels[filter]}`}
+            </p>
           </div>
           <button
             onClick={() => setSaved(true)}
@@ -132,7 +174,7 @@ export default function Attendance() {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {classStudents.map((s, i) => {
+          {visibleStudents.map((s, i) => {
             const current = attendance[s.id] ?? 'present';
             return (
               <div key={s.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50">

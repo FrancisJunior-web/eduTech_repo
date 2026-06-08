@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Printer, Eye, Award, X } from 'lucide-react';
-import { reportCards } from '../data/mockData';
+import { reportCards, classes, terms } from '../data/mockData';
 import { useBranding } from '../context/BrandingContext';
 import type { ReportCard } from '../types';
 import { StatusBadge } from '../composants/ui/Badge';
@@ -10,6 +10,23 @@ import { useLanguage } from '../i18n/LanguageContext';
 const gradeColor: Record<string, string> = {
   'A+': 'text-emerald-700', 'A': 'text-green-700', 'B': 'text-blue-700',
   'C':  'text-yellow-700',  'D': 'text-orange-700', 'F': 'text-red-700',
+};
+
+// Grades 1–6 only (exclude ECD and Grade 7)
+const GRADE_1_TO_6_IDS = ['gl2', 'gl3', 'gl4', 'gl5', 'gl6', 'gl7'];
+const grade1to6Classes = classes.filter(c => GRADE_1_TO_6_IDS.includes(c.gradeLevelId));
+
+const TERM_SEQUENCES: Record<string, [number, number]> = {
+  't1': [1, 2],
+  't2': [3, 4],
+  't3': [5, 6],
+};
+
+// Map term id → termName field used in ReportCard records
+const TERM_NAME: Record<string, string> = {
+  't1': 'first',
+  't2': 'second',
+  't3': 'third',
 };
 
 function PrintableReportCard({ rc }: { rc: ReportCard }) {
@@ -55,8 +72,8 @@ function PrintableReportCard({ rc }: { rc: ReportCard }) {
         </div>
         <div className="space-y-1.5">
           {[
-            { label: t.reportCards.academicYear, val: rc.academicYear       },
-            { label: t.common.term,              val: termLabel             },
+            { label: t.reportCards.academicYear, val: rc.academicYear           },
+            { label: t.common.term,              val: termLabel                 },
             { label: t.reportCards.headTeacher,  val: schoolInfo.headTeacher    },
           ].map(f => (
             <div key={f.label} className="flex gap-2">
@@ -152,136 +169,217 @@ function PrintableReportCard({ rc }: { rc: ReportCard }) {
   );
 }
 
-export default function ReportCards() {
-  const { t } = useLanguage();
-  const [selected, setSelected] = useState<ReportCard | null>(null);
-  const [filterClass, setFilterClass] = useState('');
+// ── Modal preview ─────────────────────────────────────────────────────────────
+function PreviewModal({ rc, onClose, onPrint }: { rc: ReportCard; onClose: () => void; onPrint: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm py-8 px-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
+        {/* Modal toolbar */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl z-10">
+          <div>
+            <p className="font-semibold text-slate-800">{rc.studentName}</p>
+            <p className="text-xs text-slate-400">{rc.className} · {rc.academicYear}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onPrint}
+              className="flex items-center gap-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+            >
+              <Printer size={14} />
+              Print
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
 
-  const classNames = [...new Set(reportCards.map(r => r.className))];
-  const filtered = filterClass ? reportCards.filter(r => r.className === filterClass) : reportCards;
+        {/* Report card content */}
+        <div className="overflow-y-auto max-h-[80vh] p-2">
+          <PrintableReportCard rc={rc} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function ReportCards() {
+  const { t, lang } = useLanguage();
+  const [filterClass, setFilterClass] = useState('');
+  const [termId,      setTermId]      = useState('');
+  const [previewRc,   setPreviewRc]   = useState<ReportCard | null>(null);
+  const [printRc,     setPrintRc]     = useState<ReportCard | null>(null);
+
+  // Build term label for dropdown options
+  const termOptionLabel = (tm: typeof terms[0]) => {
+    const n = tm.id === 't1' ? 1 : tm.id === 't2' ? 2 : 3;
+    const [a, b] = TERM_SEQUENCES[tm.id] ?? [1, 2];
+    return lang === 'fr'
+      ? `Trimestre ${n} (Séq ${a}-${b}) · 2025/2026`
+      : `Term ${n} (Seq ${a}-${b}) · 2025/2026`;
+  };
+
+  const filtered = reportCards.filter(rc => {
+    const classMatch = filterClass ? rc.className === filterClass : true;
+    const termMatch  = termId      ? rc.termName === TERM_NAME[termId] : true;
+    return classMatch && termMatch;
+  });
 
   const handlePrint = (rc: ReportCard) => {
-    setSelected(rc);
+    setPrintRc(rc);
     setTimeout(() => window.print(), 300);
   };
 
   return (
     <>
-      {selected && (
+      {/* Hidden print-only layer */}
+      {printRc && (
         <div className="print-only fixed inset-0 bg-white z-50">
-          <PrintableReportCard rc={selected} />
+          <PrintableReportCard rc={printRc} />
         </div>
+      )}
+
+      {/* Preview modal */}
+      {previewRc && (
+        <PreviewModal
+          rc={previewRc}
+          onClose={() => setPreviewRc(null)}
+          onPrint={() => handlePrint(previewRc)}
+        />
       )}
 
       <div className="space-y-5 no-print">
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Class filter */}
           <select
             value={filterClass}
             onChange={e => setFilterClass(e.target.value)}
             className="py-2 px-3 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">{t.reportCards.allClasses}</option>
-            {classNames.map(c => <option key={c}>{c}</option>)}
+            {grade1to6Classes.map(c => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
           </select>
-          <select className="py-2 px-3 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option>{t.reportCards.term1} · 2025/2026</option>
-            <option>{t.reportCards.term2} · 2025/2026</option>
+
+          {/* Term filter */}
+          <select
+            value={termId}
+            onChange={e => setTermId(e.target.value)}
+            className="py-2 px-3 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">{lang === 'fr' ? 'Tous les trimestres' : 'All Terms'}</option>
+            {terms.map(tm => (
+              <option key={tm.id} value={tm.id}>{termOptionLabel(tm)}</option>
+            ))}
           </select>
-          <button className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors ml-auto">
+
+          <button
+            onClick={() => {/* bulk print not implemented */}}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors ml-auto"
+          >
             <Printer size={14} />
             {t.reportCards.printAll} ({filtered.length})
           </button>
         </div>
 
+        {/* Report card list */}
         <div className="grid grid-cols-1 gap-4">
-          {filtered.map(rc => (
-            <div key={rc.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
-                    {rc.studentName.split(' ').map(n => n[0]).join('').slice(0,2)}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800">{rc.studentName}</h3>
-                    <p className="text-slate-400 text-xs">{rc.studentNumber} · {rc.className}</p>
-                    <p className="text-slate-400 text-xs">
-                      {rc.termName === 'first' ? t.reportCards.term1 : rc.termName === 'second' ? t.reportCards.term2 : t.reportCards.term3} · {rc.academicYear}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-indigo-600">{rc.percentage}%</p>
-                    <p className="text-xs text-slate-400">{t.assessments.classAverage}</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{rc.classPosition}<span className="text-sm text-slate-400">/{rc.outOf}</span></p>
-                    <p className="text-xs text-slate-400">{t.common.position}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-700">{rc.conduct}</p>
-                    <p className="text-xs text-slate-400">{t.reportCards.conduct}</p>
-                  </div>
-                  <StatusBadge status={rc.status} />
-                </div>
-              </div>
-
-              {/* Subject summary row */}
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-slate-400 uppercase">
-                      {rc.entries.map(e => (
-                        <th key={e.subjectId} className="text-center px-2 py-1 font-medium">{e.subjectName.split(' ')[0]}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      {rc.entries.map(e => (
-                        <td key={e.subjectId} className="text-center px-2 py-1">
-                          <span className={clsx('font-bold', gradeColor[e.grade] ?? 'text-slate-700')}>{e.grade}</span>
-                          <span className="text-slate-400 ml-1">{e.totalScore}</span>
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">
-                <button
-                  onClick={() => setSelected(selected?.id === rc.id ? null : rc)}
-                  className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  <Eye size={14} />
-                  {selected?.id === rc.id ? t.reportCards.closePreview : t.reportCards.preview}
-                </button>
-                <button
-                  onClick={() => handlePrint(rc)}
-                  className="flex items-center gap-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors ml-auto"
-                >
-                  <Printer size={14} />
-                  {t.reportCards.printReportCard}
-                </button>
-              </div>
-
-              {selected?.id === rc.id && (
-                <div className="mt-4 border-t border-slate-200 pt-4">
-                  <div className="flex justify-end mb-2">
-                    <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600">
-                      <X size={18} />
-                    </button>
-                  </div>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <PrintableReportCard rc={rc} />
-                  </div>
-                </div>
-              )}
+          {filtered.length === 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
+              {t.common.noResults}
             </div>
-          ))}
+          )}
+          {filtered.map(rc => {
+            const termLabel =
+              rc.termName === 'first'  ? t.reportCards.term1 :
+              rc.termName === 'second' ? t.reportCards.term2 : t.reportCards.term3;
+
+            return (
+              <div key={rc.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0 text-sm">
+                      {rc.studentName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800">{rc.studentName}</h3>
+                      <p className="text-slate-400 text-xs">{rc.studentNumber} · {rc.className}</p>
+                      <p className="text-slate-400 text-xs">{termLabel} · {rc.academicYear}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6 text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-indigo-600">{rc.percentage}%</p>
+                      <p className="text-xs text-slate-400">{t.assessments.classAverage}</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-slate-800">
+                        {rc.classPosition}<span className="text-sm text-slate-400">/{rc.outOf}</span>
+                      </p>
+                      <p className="text-xs text-slate-400">{t.common.position}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">{rc.conduct}</p>
+                      <p className="text-xs text-slate-400">{t.reportCards.conduct}</p>
+                    </div>
+                    <StatusBadge status={rc.status} />
+                  </div>
+                </div>
+
+                {/* Subject grade strip */}
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-slate-400 uppercase">
+                        {rc.entries.map(e => (
+                          <th key={e.subjectId} className="text-center px-2 py-1 font-medium">
+                            {e.subjectName.split(' ')[0]}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        {rc.entries.map(e => (
+                          <td key={e.subjectId} className="text-center px-2 py-1">
+                            <span className={clsx('font-bold', gradeColor[e.grade] ?? 'text-slate-700')}>{e.grade}</span>
+                            <span className="text-slate-400 ml-1">{e.totalScore}</span>
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setPreviewRc(rc)}
+                    className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                  >
+                    <Eye size={14} />
+                    {t.reportCards.preview}
+                  </button>
+                  <button
+                    onClick={() => handlePrint(rc)}
+                    className="flex items-center gap-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors ml-auto"
+                  >
+                    <Printer size={14} />
+                    {t.reportCards.printReportCard}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Plus, Eye, Pencil, Users } from 'lucide-react';
+import { Search, Plus, Eye, Pencil, Users, User, UserCheck } from 'lucide-react';
 import { students as initialStudents, classes } from '../data/mockData';
 import type { Student } from '../types';
 import { StatusBadge } from '../composants/ui/Badge';
@@ -14,9 +14,10 @@ export default function Students() {
   // Local copy so edits are reflected without a backend
   const [studentList, setStudentList] = useState<Student[]>(initialStudents);
 
-  const [search, setSearch]           = useState('');
-  const [filterClass, setFilterClass] = useState('');
-  const [filterGender, setFilterGender] = useState('');
+  const [search, setSearch]               = useState('');
+  const [filterClass, setFilterClass]     = useState('');
+  const [filterGender, setFilterGender]   = useState('');
+  const [kpiFilter, setKpiFilter]         = useState<'all' | 'male' | 'female' | 'active'>('all');
 
   const [viewing, setViewing]   = useState<Student | null>(null);
   const [editing, setEditing]   = useState<Student | null>(null);
@@ -24,10 +25,14 @@ export default function Students() {
 
   const filtered = studentList.filter(s => {
     const name = `${s.firstName} ${s.lastName} ${s.studentNumber}`.toLowerCase();
-    const matchSearch = name.includes(search.toLowerCase());
-    const matchClass  = filterClass  ? s.classId === filterClass  : true;
-    const matchGender = filterGender ? s.gender   === filterGender : true;
-    return matchSearch && matchClass && matchGender;
+    const matchSearch  = name.includes(search.toLowerCase());
+    const matchClass   = filterClass  ? s.classId === filterClass  : true;
+    const matchGender  = filterGender ? s.gender   === filterGender : true;
+    const matchKpi     = kpiFilter === 'male'   ? s.gender === 'male'
+                       : kpiFilter === 'female' ? s.gender === 'female'
+                       : kpiFilter === 'active' ? s.isActive
+                       : true;
+    return matchSearch && matchClass && matchGender && matchKpi;
   });
 
   const handleSave = (updated: Student) => {
@@ -89,7 +94,7 @@ export default function Students() {
           {/* Clear button — only visible when filtering */}
           {(search || filterClass || filterGender) && (
             <button
-              onClick={() => { setSearch(''); setFilterClass(''); setFilterGender(''); }}
+              onClick={() => { setSearch(''); setFilterClass(''); setFilterGender(''); setKpiFilter('all'); }}
               className="py-2.5 px-3 text-sm text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             >
               ✕ Clear
@@ -105,19 +110,97 @@ export default function Students() {
         </div>
       </div>
 
-      {/* ── Summary cards ────────────────────────────────────── */}
+      {/* ── Summary KPIs ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: t.students.totalStudents,  count: studentList.length,                                    color: 'bg-indigo-50 text-indigo-700' },
-          { label: t.students.male,           count: studentList.filter(s => s.gender === 'male').length,   color: 'bg-blue-50 text-blue-700'    },
-          { label: t.students.female,         count: studentList.filter(s => s.gender === 'female').length, color: 'bg-pink-50 text-pink-700'    },
-          { label: t.students.activeStudents, count: studentList.filter(s => s.isActive).length,            color: 'bg-green-50 text-green-700'  },
-        ].map(item => (
-          <div key={item.label} className={`rounded-xl p-4 text-center ${item.color}`}>
-            <p className="text-2xl font-bold">{item.count}</p>
-            <p className="text-sm font-medium opacity-80">{item.label}</p>
-          </div>
-        ))}
+        {([
+          {
+            key: 'all'    as const,
+            label: t.students.totalStudents,
+            count: studentList.length,
+            Icon: Users,
+            activeBg:     'bg-indigo-600 border-indigo-600',
+            activeShadow: 'shadow-indigo-200',
+            iconActive:   'text-indigo-200',
+            numActive:    'text-white',
+            labelActive:  'text-indigo-200',
+            numDefault:   'text-indigo-600',
+            hoverBorder:  'hover:border-indigo-300',
+            hoverShadow:  'hover:shadow-indigo-100',
+            blob:         'bg-indigo-400',
+          },
+          {
+            key: 'male'   as const,
+            label: t.students.male,
+            count: studentList.filter(s => s.gender === 'male').length,
+            Icon: User,
+            activeBg:     'bg-blue-500 border-blue-500',
+            activeShadow: 'shadow-blue-200',
+            iconActive:   'text-blue-100',
+            numActive:    'text-white',
+            labelActive:  'text-blue-100',
+            numDefault:   'text-blue-600',
+            hoverBorder:  'hover:border-blue-300',
+            hoverShadow:  'hover:shadow-blue-100',
+            blob:         'bg-blue-400',
+          },
+          {
+            key: 'female' as const,
+            label: t.students.female,
+            count: studentList.filter(s => s.gender === 'female').length,
+            Icon: User,
+            activeBg:     'bg-pink-500 border-pink-500',
+            activeShadow: 'shadow-pink-200',
+            iconActive:   'text-pink-100',
+            numActive:    'text-white',
+            labelActive:  'text-pink-100',
+            numDefault:   'text-pink-600',
+            hoverBorder:  'hover:border-pink-300',
+            hoverShadow:  'hover:shadow-pink-100',
+            blob:         'bg-pink-400',
+          },
+          {
+            key: 'active' as const,
+            label: t.students.activeStudents,
+            count: studentList.filter(s => s.isActive).length,
+            Icon: UserCheck,
+            activeBg:     'bg-emerald-500 border-emerald-500',
+            activeShadow: 'shadow-emerald-200',
+            iconActive:   'text-emerald-100',
+            numActive:    'text-white',
+            labelActive:  'text-emerald-100',
+            numDefault:   'text-emerald-600',
+            hoverBorder:  'hover:border-emerald-300',
+            hoverShadow:  'hover:shadow-emerald-100',
+            blob:         'bg-emerald-400',
+          },
+        ] as const).map(({ key, label, count, Icon, activeBg, activeShadow, iconActive, numActive, labelActive, numDefault, hoverBorder, hoverShadow, blob }) => {
+          const isActive = kpiFilter === key;
+          return (
+            <div
+              key={key}
+              onClick={() => setKpiFilter(f => f === key ? 'all' : key)}
+              className={[
+                'relative overflow-hidden rounded-xl border p-4 cursor-pointer select-none',
+                'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg group',
+                isActive
+                  ? `${activeBg} shadow-md ${activeShadow}`
+                  : `bg-white border-slate-200 ${hoverBorder} ${hoverShadow}`,
+              ].join(' ')}
+            >
+              <div className={`absolute -right-3 -top-3 w-16 h-16 rounded-full opacity-10 ${isActive ? 'bg-white' : blob}`} />
+              <Icon
+                size={20}
+                className={`mb-2 transition-colors ${isActive ? iconActive : `${numDefault} opacity-80 group-hover:opacity-100`}`}
+              />
+              <p className={`text-2xl font-bold transition-colors ${isActive ? numActive : numDefault}`}>
+                {count}
+              </p>
+              <p className={`text-sm mt-0.5 font-medium transition-colors ${isActive ? labelActive : 'text-slate-500'}`}>
+                {label}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Table ────────────────────────────────────────────── */}

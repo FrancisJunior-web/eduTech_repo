@@ -10,7 +10,10 @@ import ReportCards from './pages/ReportCards';
 import Fees        from './pages/Fees';
 import Timetable   from './pages/Timetable';
 import Parents     from './pages/Parents';
-import Settings    from './pages/Settings';
+import Settings          from './pages/Settings';
+import Announcements    from './pages/Announcements';
+import EmailAlerts      from './pages/EmailAlerts';
+import DiscussionForums from './pages/DiscussionForums';
 
 export default function App() {
   return (
@@ -28,7 +31,10 @@ export default function App() {
           <Route path="fees"         element={<Fees        />} />
           <Route path="timetable"    element={<Timetable   />} />
           <Route path="parents"      element={<Parents     />} />
-          <Route path="settings"     element={<Settings    />} />
+          <Route path="settings"          element={<Settings          />} />
+          <Route path="announcements"    element={<Announcements    />} />
+          <Route path="email-alerts"     element={<EmailAlerts      />} />
+          <Route path="discussion-forums" element={<DiscussionForums />} />
         </Route>
       </Routes>
     </BrowserRouter>
