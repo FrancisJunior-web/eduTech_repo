@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap,
-  ClipboardCheck, FileText, Award, Wallet, Calendar, Settings,
+  ClipboardCheck, FileText, Award, Wallet, Calendar, UserRound, Settings,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -21,6 +21,7 @@ export default function Sidebar() {
     { label: t.nav.reportCards,  to: '/report-cards', icon: Award            },
     { label: t.nav.fees,         to: '/fees',         icon: Wallet           },
     { label: t.nav.timetable,    to: '/timetable',    icon: Calendar         },
+    { label: t.nav.parents,      to: '/parents',      icon: UserRound        },
   ];
 
   return (

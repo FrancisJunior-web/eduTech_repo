@@ -9,6 +9,7 @@ import Assessments from './pages/Assessments';
 import ReportCards from './pages/ReportCards';
 import Fees        from './pages/Fees';
 import Timetable   from './pages/Timetable';
+import Parents     from './pages/Parents';
 import Settings    from './pages/Settings';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="report-cards" element={<ReportCards />} />
           <Route path="fees"         element={<Fees        />} />
           <Route path="timetable"    element={<Timetable   />} />
+          <Route path="parents"      element={<Parents     />} />
           <Route path="settings"     element={<Settings    />} />
         </Route>
       </Routes>

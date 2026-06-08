@@ -8,13 +8,13 @@ export interface Translations {
   nav: {
     mainMenu: string; system: string; dashboard: string; students: string;
     classes: string; teachers: string; attendance: string; assessments: string;
-    reportCards: string; fees: string; timetable: string; settings: string;
-    currentTerm: string;
+    reportCards: string; fees: string; timetable: string; parents: string;
+    settings: string; currentTerm: string;
   };
   header: {
     dashboard: string; students: string; classes: string; teachers: string;
     attendance: string; assessments: string; reportCards: string; fees: string;
-    timetable: string; settings: string; search: string; headTeacher: string;
+    timetable: string; parents: string; settings: string; search: string; headTeacher: string;
   };
   common: {
     search: string; add: string; save: string; edit: string; view: string;
@@ -25,7 +25,7 @@ export interface Translations {
     present: string; absent: string; late: string; excused: string;
     paid: string; partial: string; pending: string; overdue: string;
     waived: string; draft: string; finalized: string; published: string; printed: string;
-    monday: string; tuesday: string; wednesday: string; thursday: string; friday: string;
+    monday: string; tuesday: string; wednesday: string; thursday: string; friday: string; saturday: string;
   };
   dashboard: {
     welcomeBack: string; totalStudents: string; enrolledThisYear: string;
@@ -116,13 +116,13 @@ export const en: Translations = {
     students: 'Students', classes: 'Classes', teachers: 'Teachers',
     attendance: 'Attendance', assessments: 'Assessments',
     reportCards: 'Report Cards', fees: 'Fees', timetable: 'Timetable',
-    settings: 'Settings', currentTerm: 'Current Term',
+    parents: 'Parents', settings: 'Settings', currentTerm: 'Current Term',
   },
   header: {
     dashboard: 'Dashboard', students: 'Students', classes: 'Classes',
     teachers: 'Teachers', attendance: 'Attendance', assessments: 'Assessments',
     reportCards: 'Report Cards', fees: 'Fees & Payments', timetable: 'Timetable',
-    settings: 'Settings', search: 'Search...', headTeacher: 'Head Teacher',
+    parents: 'Parents & Guardians', settings: 'Settings', search: 'Search...', headTeacher: 'Head Teacher',
   },
   common: {
     search: 'Search', add: 'Add', save: 'Save', edit: 'Edit', view: 'View',
@@ -136,7 +136,7 @@ export const en: Translations = {
     waived: 'Waived', draft: 'Draft', finalized: 'Finalized',
     published: 'Published', printed: 'Printed',
     monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
-    thursday: 'Thursday', friday: 'Friday',
+    thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
   },
   dashboard: {
     welcomeBack: 'Welcome back,', totalStudents: 'Total Students',
@@ -250,14 +250,14 @@ export const fr: Translations = {
     students: 'Élèves', classes: 'Classes', teachers: 'Enseignants',
     attendance: 'Présences', assessments: 'Évaluations',
     reportCards: 'Bulletins', fees: 'Frais', timetable: 'Emploi du temps',
-    settings: 'Paramètres', currentTerm: 'Trimestre en cours',
+    parents: 'Parents', settings: 'Paramètres', currentTerm: 'Trimestre en cours',
   },
   header: {
     dashboard: 'Tableau de bord', students: 'Élèves', classes: 'Classes',
     teachers: 'Enseignants', attendance: 'Présences', assessments: 'Évaluations',
     reportCards: 'Bulletins', fees: 'Frais & Paiements',
-    timetable: 'Emploi du temps', settings: 'Paramètres',
-    search: 'Rechercher...', headTeacher: 'Directeur(trice)',
+    timetable: 'Emploi du temps', parents: 'Parents & Tuteurs',
+    settings: 'Paramètres', search: 'Rechercher...', headTeacher: 'Directeur(trice)',
   },
   common: {
     search: 'Rechercher', add: 'Ajouter', save: 'Enregistrer', edit: 'Modifier',
@@ -271,7 +271,7 @@ export const fr: Translations = {
     waived: 'Exonéré', draft: 'Brouillon', finalized: 'Finalisé',
     published: 'Publié', printed: 'Imprimé',
     monday: 'Lundi', tuesday: 'Mardi', wednesday: 'Mercredi',
-    thursday: 'Jeudi', friday: 'Vendredi',
+    thursday: 'Jeudi', friday: 'Vendredi', saturday: 'Samedi',
   },
   dashboard: {
     welcomeBack: 'Bienvenue,', totalStudents: 'Total Élèves',

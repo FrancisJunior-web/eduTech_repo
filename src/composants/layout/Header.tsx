@@ -16,6 +16,7 @@ export default function Header() {
     '/report-cards': t.header.reportCards,
     '/fees':         t.header.fees,
     '/timetable':    t.header.timetable,
+    '/parents':      t.header.parents,
     '/settings':     t.header.settings,
   };
 
