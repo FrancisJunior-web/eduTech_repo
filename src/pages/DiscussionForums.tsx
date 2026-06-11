@@ -36,37 +36,6 @@ const tagColor: Record<string, string> = {
   Admin:    'bg-blue-50 text-blue-700',
 };
 
-const THREADS: Thread[] = [
-  { id: 1, title: 'General Staff Discussion', tag: 'General',  participants: 12, unread: 3, preview: 'When is the next staff meeting?' },
-  { id: 2, title: 'Grade 5 – Maths Support',  tag: 'Academic', participants: 5,  unread: 0, preview: 'Here are the worksheets I mentioned' },
-  { id: 3, title: 'Sports Day Planning',       tag: 'Events',   participants: 8,  unread: 1, preview: 'Can everyone confirm their house?' },
-  { id: 4, title: 'Parent Updates – June',     tag: 'Admin',    participants: 6,  unread: 0, preview: 'Fees reminder sent to all parents' },
-];
-
-const INIT_MSGS: Record<number, Msg[]> = {
-  1: [
-    { id: 1, author: 'Mrs. Rutendo Zulu',  initials: 'RZ', type: 'text',  text: "Good morning everyone! Don't forget the staff meeting tomorrow at 8 AM.",              time: '08:15', mine: false },
-    { id: 2, author: 'You',                initials: 'GM', type: 'text',  text: "Thanks for the reminder! I'll be there.",                                              time: '08:22', mine: true  },
-    { id: 3, author: 'Mr. Farai Ncube',    initials: 'FN', type: 'voice', voiceUrl: null, voiceDuration: 12,                                                            time: '09:04', mine: false },
-    { id: 4, author: 'Mrs. Chipo Ndlovu', initials: 'CN', type: 'image', imageUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400',               time: '10:30', mine: false },
-    { id: 5, author: 'You',                initials: 'GM', type: 'text',  text: 'When is the next staff meeting after this one?',                                       time: '10:45', mine: true  },
-  ],
-  2: [
-    { id: 1, author: 'Mrs. Tapiwa Dube',  initials: 'TD', type: 'text',  text: "I've prepared some extra worksheets for struggling students.",                         time: '11:00', mine: false },
-    { id: 2, author: 'You',               initials: 'GM', type: 'text',  text: 'Great idea! Can you share them here?',                                                  time: '11:05', mine: true  },
-    { id: 3, author: 'Mrs. Tapiwa Dube',  initials: 'TD', type: 'image', imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400',                time: '11:08', mine: false },
-    { id: 4, author: 'You',               initials: 'GM', type: 'voice', voiceUrl: null, voiceDuration: 6,                                                              time: '11:20', mine: true  },
-  ],
-  3: [
-    { id: 1, author: 'Mr. Blessing Sibanda', initials: 'BS', type: 'text',  text: 'Sports Day is confirmed for 22 June. All teachers please confirm your house team.', time: '14:00', mine: false },
-    { id: 2, author: 'You',                  initials: 'GM', type: 'text',  text: 'I am with the Red Eagles!',                                                         time: '14:15', mine: true  },
-    { id: 3, author: 'Mr. Blessing Sibanda', initials: 'BS', type: 'voice', voiceUrl: null, voiceDuration: 8,                                                           time: '14:30', mine: false },
-  ],
-  4: [
-    { id: 1, author: 'Mr. Tinashe Moyo', initials: 'TM', type: 'text', text: 'Fee reminders have been sent to all parents via email.',     time: '09:00', mine: false },
-    { id: 2, author: 'You',              initials: 'GM', type: 'text', text: "Thank you Tinashe. What's the response rate so far?",        time: '09:10', mine: true  },
-  ],
-};
 
 // Static waveform for sample voice messages that have no real audio
 const WAVE_HEIGHTS = [40, 65, 80, 55, 90, 45, 75, 85, 60, 70, 50, 80, 65, 45, 72, 55, 85, 62, 75, 40];
@@ -89,8 +58,9 @@ export default function DiscussionForums() {
   const { lang } = useLanguage();
   const lbl = (en: string, fr: string) => lang === 'fr' ? fr : en;
 
-  const [activeThread, setActiveThread] = useState(1);
-  const [msgs, setMsgs]     = useState<Record<number, Msg[]>>(INIT_MSGS);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeThread, setActiveThread] = useState<number | null>(null);
+  const [msgs, setMsgs]     = useState<Record<number, Msg[]>>({});
   const [text, setText]     = useState('');
   const [search, setSearch] = useState('');
   const [recording, setRecording] = useState(false);
@@ -103,9 +73,9 @@ export default function DiscussionForums() {
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const recStartRef = useRef(0);
 
-  const activeMsgs = msgs[activeThread] ?? [];
-  const activeInfo = THREADS.find(t => t.id === activeThread)!;
-  const filtered   = THREADS.filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()));
+  const activeMsgs = activeThread !== null ? (msgs[activeThread] ?? []) : [];
+  const activeInfo = threads.find(t => t.id === activeThread);
+  const filtered   = threads.filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,7 +85,8 @@ export default function DiscussionForums() {
 
   const now = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  const appendMsg = (threadId: number, partial: Omit<Msg, 'id' | 'author' | 'initials' | 'time' | 'mine'>) => {
+  const appendMsg = (threadId: number | null, partial: Omit<Msg, 'id' | 'author' | 'initials' | 'time' | 'mine'>) => {
+    if (threadId === null) return;
     setMsgs(prev => ({
       ...prev,
       [threadId]: [...(prev[threadId] ?? []), {
@@ -236,6 +207,16 @@ export default function DiscussionForums() {
 
       {/* ── Right: chat area ────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
+
+        {!activeInfo ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+              <MessageCircle size={28} className="text-slate-400" />
+            </div>
+            <p className="font-semibold text-slate-700 mb-1">{lbl('No forums yet', 'Aucun forum')}</p>
+            <p className="text-slate-400 text-sm max-w-xs">{lbl('Create a forum thread to start a discussion.', 'Créez un fil de discussion pour commencer.')}</p>
+          </div>
+        ) : (<>
 
         {/* Chat header */}
         <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3 bg-white shrink-0">
@@ -399,6 +380,7 @@ export default function DiscussionForums() {
             )}
           </div>
         </div>
+        </>)}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, AlertCircle, Save } from 'lucide-react';
-import { students, classes } from '../data/mockData';
-import type { AttendanceStatus } from '../types';
+import { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Clock, AlertCircle, Save, BookOpen } from 'lucide-react';
+import type { AttendanceStatus, Class, Student } from '../types';
 import { clsx } from 'clsx';
 import { useLanguage } from '../i18n/LanguageContext';
+import { api } from '../api/client';
+import { mapClass, mapStudent } from '../api/mappers';
 
 export default function Attendance() {
   const { t } = useLanguage();
@@ -23,26 +24,50 @@ export default function Attendance() {
   };
 
   const today = new Date().toISOString().split('T')[0];
-  const [date, setDate]         = useState(today);
-  const [classId, setClassId]   = useState(classes[0].id);
-  const [saved, setSaved]       = useState(false);
-  const [filter, setFilter]     = useState<AttendanceStatus | 'all'>('all');
+  const [classes,    setClasses]    = useState<Class[]>([]);
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
+  const [date,       setDate]       = useState(today);
+  const [classId,    setClassId]    = useState('');
+  const [saved,      setSaved]      = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [filter,     setFilter]     = useState<AttendanceStatus | 'all'>('all');
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
-  const classStudents = students.filter(s => s.classId === classId);
+  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
 
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>(() => {
-    const init: Record<string, AttendanceStatus> = {};
-    classStudents.forEach(s => { init[s.id] = 'present'; });
-    return init;
-  });
+  // Load classes once
+  useEffect(() => {
+    api.getClasses()
+      .then(data => {
+        const mapped = data.map(mapClass);
+        setClasses(mapped);
+        if (mapped.length > 0) setClassId(mapped[0].id);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingClasses(false));
+  }, []);
+
+  // Load students when classId changes
+  useEffect(() => {
+    if (!classId) return;
+    setLoadingStudents(true);
+    api.getClassStudents(classId)
+      .then(data => {
+        const mapped = data.map(mapStudent);
+        setClassStudents(mapped);
+        const init: Record<string, AttendanceStatus> = {};
+        mapped.forEach(s => { init[s.id] = 'present'; });
+        setAttendance(init);
+        setSaved(false);
+        setFilter('all');
+      })
+      .catch(console.error)
+      .finally(() => setLoadingStudents(false));
+  }, [classId]);
 
   const handleClassChange = (id: string) => {
     setClassId(id);
-    const next: Record<string, AttendanceStatus> = {};
-    students.filter(s => s.classId === id).forEach(s => { next[s.id] = 'present'; });
-    setAttendance(next);
-    setSaved(false);
-    setFilter('all');
   };
 
   const visibleStudents = filter === 'all'
@@ -61,12 +86,55 @@ export default function Attendance() {
     setSaved(false);
   };
 
+  const handleSave = async () => {
+    if (!classId) return;
+    setSaving(true);
+    const cls = classes.find(c => c.id === classId);
+    const records = classStudents.map(s => ({
+      studentId:     s.id,
+      studentName:   `${s.firstName} ${s.lastName}`,
+      studentNumber: s.studentNumber,
+      classId:       classId,
+      className:     cls?.name ?? '',
+      date:          date,
+      status:        attendance[s.id] ?? 'present',
+    }));
+    try {
+      await api.saveAttendance(records);
+      setSaved(true);
+    } catch (err) {
+      console.error('Failed to save attendance:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const counts = {
     present: classStudents.filter(s => attendance[s.id] === 'present').length,
     absent:  classStudents.filter(s => attendance[s.id] === 'absent').length,
     late:    classStudents.filter(s => attendance[s.id] === 'late').length,
     excused: classStudents.filter(s => attendance[s.id] === 'excused').length,
   };
+
+  if (loadingClasses) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+          <BookOpen size={28} className="text-slate-400" />
+        </div>
+        <h3 className="text-slate-700 font-semibold text-lg mb-1">No classes yet</h3>
+        <p className="text-slate-400 text-sm max-w-xs">Add classes first before recording attendance.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -78,7 +146,7 @@ export default function Attendance() {
             <input
               type="date"
               value={date}
-              onChange={e => setDate(e.target.value)}
+              onChange={e => { setDate(e.target.value); setSaved(false); }}
               className="py-2 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -133,10 +201,7 @@ export default function Attendance() {
                   )}
                 >
                   <div className={clsx('absolute -right-3 -top-3 w-16 h-16 rounded-full opacity-10', isActive ? 'bg-white' : blob)} />
-                  <Icon
-                    size={20}
-                    className={clsx('mb-2 transition-colors', isActive ? iconActive : clsx(cfg.color, 'opacity-80 group-hover:opacity-100'))}
-                  />
+                  <Icon size={20} className={clsx('mb-2 transition-colors', isActive ? iconActive : clsx(cfg.color, 'opacity-80 group-hover:opacity-100'))} />
                   <p className={clsx('text-2xl font-bold transition-colors', isActive ? numActive : numDefault)}>
                     {counts[status]}
                   </p>
@@ -149,7 +214,6 @@ export default function Attendance() {
           </div>
         );
       })()}
-
 
       {/* Attendance sheet */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -165,55 +229,66 @@ export default function Attendance() {
             </p>
           </div>
           <button
-            onClick={() => setSaved(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Save size={14} />
-            {saved ? t.common.saved : t.attendance.saveAttendance}
+            {saving ? 'Saving…' : saved ? t.common.saved : t.attendance.saveAttendance}
           </button>
         </div>
 
-        <div className="divide-y divide-slate-100">
-          {visibleStudents.map((s, i) => {
-            const current = attendance[s.id] ?? 'present';
-            return (
-              <div key={s.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50">
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-400 text-sm w-6 text-right">{i + 1}</span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${s.gender === 'female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {s.firstName[0]}{s.lastName[0]}
+        {loadingStudents ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : classStudents.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 text-sm">
+            No students enrolled in this class yet.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {visibleStudents.map((s, i) => {
+              const current = attendance[s.id] ?? 'present';
+              return (
+                <div key={s.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 text-sm w-6 text-right">{i + 1}</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${s.gender === 'female' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {s.firstName[0]}{s.lastName[0]}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-800 text-sm">{s.firstName} {s.lastName}</p>
+                      <p className="text-xs text-slate-400">{s.studentNumber}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-slate-800 text-sm">{s.firstName} {s.lastName}</p>
-                    <p className="text-xs text-slate-400">{s.studentNumber}</p>
-                  </div>
-                </div>
 
-                <div className="flex gap-2">
-                  {(['present','absent','late','excused'] as AttendanceStatus[]).map(status => {
-                    const cfg = statusConfig[status];
-                    const isSelected = current === status;
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => mark(s.id, status)}
-                        className={clsx(
-                          'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
-                          isSelected
-                            ? clsx(cfg.bg, cfg.color, 'border-current ring-1 ring-offset-1',
-                                status === 'present' ? 'ring-green-400' : status === 'absent' ? 'ring-red-400' : status === 'late' ? 'ring-yellow-400' : 'ring-blue-400')
-                            : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
-                        )}
-                      >
-                        {statusLabels[status]}
-                      </button>
-                    );
-                  })}
+                  <div className="flex gap-2">
+                    {(['present','absent','late','excused'] as AttendanceStatus[]).map(status => {
+                      const cfg = statusConfig[status];
+                      const isSelected = current === status;
+                      return (
+                        <button
+                          key={status}
+                          onClick={() => mark(s.id, status)}
+                          className={clsx(
+                            'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                            isSelected
+                              ? clsx(cfg.bg, cfg.color, 'border-current ring-1 ring-offset-1',
+                                  status === 'present' ? 'ring-green-400' : status === 'absent' ? 'ring-red-400' : status === 'late' ? 'ring-yellow-400' : 'ring-blue-400')
+                              : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                          )}
+                        >
+                          {statusLabels[status]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

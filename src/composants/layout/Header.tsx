@@ -38,6 +38,7 @@ export default function Header() {
     '/announcements':     t.header.announcements,
     '/email-alerts':      t.header.emailAlerts,
     '/discussion-forums': t.header.discussionForums,
+    '/teacher-payment':   t.header.teacherPayment,
   };
 
   const title = titles[pathname] ?? 'School Management';

@@ -11,12 +11,14 @@ export interface Translations {
     reportCards: string; fees: string; timetable: string; parents: string;
     settings: string; currentTerm: string;
     communication: string; announcements: string; emailAlerts: string; discussionForums: string;
+    teacherPayment: string;
   };
   header: {
     dashboard: string; students: string; classes: string; teachers: string;
     attendance: string; assessments: string; reportCards: string; fees: string;
     timetable: string; parents: string; settings: string; search: string; headTeacher: string;
     announcements: string; emailAlerts: string; discussionForums: string;
+    teacherPayment: string;
   };
   common: {
     search: string; add: string; save: string; edit: string; view: string;
@@ -120,6 +122,7 @@ export const en: Translations = {
     reportCards: 'Report Cards', fees: 'Fees', timetable: 'Timetable',
     parents: 'Parents', settings: 'Settings', currentTerm: 'Current Term',
     communication: 'Communication', announcements: 'Announcements', emailAlerts: 'Email Alerts', discussionForums: 'Discussion Forums',
+    teacherPayment: 'Teacher Payment',
   },
   header: {
     dashboard: 'Dashboard', students: 'Students', classes: 'Classes',
@@ -127,6 +130,7 @@ export const en: Translations = {
     reportCards: 'Report Cards', fees: 'Fees & Payments', timetable: 'Timetable',
     parents: 'Parents & Guardians', settings: 'Settings', search: 'Search...', headTeacher: 'Head Teacher',
     announcements: 'Announcements / Notices', emailAlerts: 'Email Alerts', discussionForums: 'Discussion Forums',
+    teacherPayment: 'Teacher Payroll',
   },
   common: {
     search: 'Search', add: 'Add', save: 'Save', edit: 'Edit', view: 'View',
@@ -256,6 +260,7 @@ export const fr: Translations = {
     reportCards: 'Bulletins', fees: 'Frais', timetable: 'Emploi du temps',
     parents: 'Parents', settings: 'Paramètres', currentTerm: 'Trimestre en cours',
     communication: 'Communication', announcements: 'Annonces', emailAlerts: 'Alertes Email', discussionForums: 'Forums de Discussion',
+    teacherPayment: 'Paiement Enseignants',
   },
   header: {
     dashboard: 'Tableau de bord', students: 'Élèves', classes: 'Classes',
@@ -264,6 +269,7 @@ export const fr: Translations = {
     timetable: 'Emploi du temps', parents: 'Parents & Tuteurs',
     settings: 'Paramètres', search: 'Rechercher...', headTeacher: 'Directeur(trice)',
     announcements: 'Annonces / Avis', emailAlerts: 'Alertes Email', discussionForums: 'Forums de Discussion',
+    teacherPayment: 'Paie des Enseignants',
   },
   common: {
     search: 'Rechercher', add: 'Ajouter', save: 'Enregistrer', edit: 'Modifier',

@@ -8,9 +8,7 @@ import { useBranding } from '../context/BrandingContext';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const DEMO = [
-  { role: 'Head Teacher', initials: 'GM', color: 'bg-indigo-600', email: 'admin@edutech.com',     password: 'admin123'     },
-  { role: 'Teacher',      initials: 'FN', color: 'bg-violet-600', email: 'teacher@edutech.com',   password: 'teacher123'   },
-  { role: 'Secretary',    initials: 'CN', color: 'bg-sky-600',    email: 'secretary@edutech.com', password: 'secretary123' },
+  { role: 'Administrator', initials: 'AD', color: 'bg-indigo-600', email: 'admin@school.com', password: 'Admin@2025' },
 ];
 
 const FEATURES = [
@@ -33,7 +31,7 @@ export default function Login() {
 
   const fill = (d: typeof DEMO[0]) => { setEmail(d.email); setPassword(d.password); setError(''); };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     if (!email.trim() || !password) {
@@ -41,11 +39,9 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      const ok = login(email, password);
-      if (!ok) setError(lbl('Invalid email or password.', 'Email ou mot de passe incorrect.'));
-      setLoading(false);
-    }, 600);
+    const ok = await login(email, password);
+    if (!ok) setError(lbl('Invalid email or password.', 'Email ou mot de passe incorrect.'));
+    setLoading(false);
   };
 
   return (
@@ -64,8 +60,8 @@ export default function Login() {
       />
 
       {/* Ambient glow blobs */}
-      <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-violet-700/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-5%] w-125 h-125 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-125 h-125 bg-violet-700/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-[40%] left-[55%] w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
       {/* ── Floating card ───────────────────────────────────────── */}
@@ -143,28 +139,18 @@ export default function Login() {
             )}
           </div>
 
-          {/* ── Stats ── */}
-          <div className="relative z-10 grid grid-cols-3 gap-2">
-            {[
-              { value: '450+', label: lbl('Students', 'Élèves')      },
-              { value: '24',   label: lbl('Teachers', 'Enseignants')  },
-              { value: '18',   label: lbl('Classes',  'Classes')      },
-            ].map(s => (
-              <div
-                key={s.label}
-                className="rounded-xl p-3 text-center border border-white/10 backdrop-blur-sm"
-                style={{ background: 'rgba(255,255,255,0.07)' }}
-              >
-                <p className="text-white font-extrabold text-xl leading-none">{s.value}</p>
-                <p className="text-indigo-300 text-[11px] mt-1 font-medium">{s.label}</p>
-              </div>
-            ))}
+          {/* ── Security note ── */}
+          <div className="relative z-10 rounded-xl p-4 border border-white/10 backdrop-blur-sm flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.07)' }}>
+            <Shield size={18} className="text-indigo-300 shrink-0" />
+            <p className="text-indigo-200 text-xs leading-relaxed">
+              {lbl('Your data is secured with JWT authentication and encrypted storage.', 'Vos données sont sécurisées par authentification JWT et stockage chiffré.')}
+            </p>
           </div>
         </div>
 
         {/* ── RIGHT PANEL — login form ────────────────────────────── */}
         <div className="flex-1 bg-white flex items-center justify-center px-8 py-10 sm:px-12">
-          <div className="w-full max-w-[340px]">
+          <div className="w-full max-w-85">
 
             {/* Mobile logo */}
             <div className="flex lg:hidden items-center gap-3 mb-8">

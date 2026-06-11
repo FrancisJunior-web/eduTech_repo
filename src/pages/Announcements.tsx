@@ -12,13 +12,6 @@ interface Announcement {
   type: 'info' | 'warning' | 'success';
 }
 
-const SAMPLE: Announcement[] = [
-  { id: 1, title: 'End-of-Term Examinations Schedule', body: 'End-of-term examinations will begin on 15 July 2025. All students are required to be present. Class teachers will distribute individual timetables by Friday.', audience: 'All Classes', date: '2025-06-01', pinned: true,  type: 'info'    },
-  { id: 2, title: 'Parent–Teacher Meeting', body: 'A parent–teacher meeting is scheduled for Saturday 8 June 2025 from 9 AM to 12 PM. Parents are strongly encouraged to attend.', audience: 'All Parents', date: '2025-05-28', pinned: true,  type: 'success' },
-  { id: 3, title: 'School Fees Reminder', body: 'Second installment fees are due by 15 June 2025. Students with outstanding balances may not be allowed to sit end-of-term exams.', audience: 'All Students', date: '2025-05-20', pinned: false, type: 'warning' },
-  { id: 4, title: 'Sports Day Notice', body: 'Annual Sports Day is confirmed for 22 June 2025. Students should come in their house colours. No regular uniform required on that day.', audience: 'All Classes', date: '2025-05-15', pinned: false, type: 'info'    },
-];
-
 const typeStyle = {
   info:    { bar: 'bg-indigo-500', badge: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
   warning: { bar: 'bg-amber-400',  badge: 'bg-amber-50  text-amber-700  border-amber-100'  },
@@ -29,9 +22,9 @@ export default function Announcements() {
   const { t, lang } = useLanguage();
   const lbl = (en: string, fr: string) => lang === 'fr' ? fr : en;
 
-  const [items, setItems]     = useState<Announcement[]>(SAMPLE);
+  const [items, setItems]     = useState<Announcement[]>([]);
   const [search, setSearch]   = useState('');
-  const [expanded, setExpanded] = useState<number | null>(1);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [draft, setDraft]     = useState({ title: '', body: '', audience: 'All Classes', type: 'info' as Announcement['type'] });
 
@@ -158,7 +151,7 @@ export default function Announcements() {
         {[
           { label: lbl('Total', 'Total'),  value: items.length,                color: 'text-indigo-600' },
           { label: lbl('Pinned', 'Épinglés'), value: items.filter(a => a.pinned).length,  color: 'text-amber-600'  },
-          { label: lbl('This Month', 'Ce mois'), value: items.filter(a => a.date.startsWith('2025-06')).length, color: 'text-emerald-600' },
+          { label: lbl('This Month', 'Ce mois'), value: items.filter(a => a.date.startsWith(new Date().toISOString().slice(0, 7))).length, color: 'text-emerald-600' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>

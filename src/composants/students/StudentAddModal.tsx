@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { X, UserPlus, CheckCircle, ChevronRight } from 'lucide-react';
-import type { Student } from '../../types';
-import { classes } from '../../data/mockData';
+import type { Student, Class } from '../../types';
 import { useLanguage } from '../../i18n/LanguageContext';
+
+export interface FeeData {
+  feeName: string;
+  amountDue: number;
+  dueDate?: string;
+  academicYear?: string;
+}
 
 interface Props {
   onClose: () => void;
-  onAdd: (student: Student) => void;
+  onAdd: (student: Student, fee?: FeeData) => void;
   totalExisting: number;
+  classes: Class[];
 }
 
-type Step = 'personal' | 'school' | 'guardian';
+type Step = 'personal' | 'school' | 'guardian' | 'fees';
 
-const STEPS: Step[] = ['personal', 'school', 'guardian'];
+const STEPS: Step[] = ['personal', 'school', 'guardian', 'fees'];
 
 const empty = {
   firstName: '', lastName: '', dateOfBirth: '', gender: 'male' as const,
@@ -54,12 +61,22 @@ function Field({
   );
 }
 
-export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props) {
+export default function StudentAddModal({ onClose, onAdd, totalExisting, classes }: Props) {
   const { t } = useLanguage();
+  const currentYear = new Date().getFullYear();
+
   const [step, setStep]     = useState<Step>('personal');
-  const [form, setForm]     = useState<FormState>({ ...empty, classId: classes[0].id });
+  const [form, setForm]     = useState<FormState>({ ...empty, classId: classes[0]?.id ?? '' });
   const [errors, setErrors] = useState<Errors>({});
   const [done, setDone]     = useState(false);
+
+  const [feeForm, setFeeForm] = useState({
+    feeName:      '',
+    amountDue:    '',
+    dueDate:      '',
+    academicYear: `${currentYear}-${currentYear + 1}`,
+  });
+  const [feeErrors, setFeeErrors] = useState<Record<string, string>>({});
 
   const set = (field: keyof FormState, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -72,6 +89,7 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
     personal: t.students.personalInfo,
     school:   t.students.schoolInfo,
     guardian: t.students.guardianInfo,
+    fees:     t.fees.fee ?? 'Fees',
   };
 
   // Validate fields for each step
@@ -97,13 +115,13 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
     if (!validate()) return;
     if (step === 'personal') setStep('school');
     else if (step === 'school') setStep('guardian');
+    else if (step === 'guardian') setStep('fees');
   };
 
-  const handleSubmit = () => {
-    if (!validate()) return;
-
-    const cls = classes.find(c => c.id === form.classId) ?? classes[0];
-    const newStudent: Student = {
+  const buildStudent = (): Student | null => {
+    const cls = classes.find(c => c.id === form.classId);
+    if (!cls) return null;
+    return {
       id:                   `st-${Date.now()}`,
       studentNumber:        generateStudentNumber(totalExisting),
       firstName:            form.firstName.trim(),
@@ -120,8 +138,32 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
       admissionDate:        new Date().toISOString().split('T')[0],
       isActive:             true,
     };
+  };
 
-    onAdd(newStudent);
+  const handleSkipFees = () => {
+    const student = buildStudent();
+    if (!student) return;
+    onAdd(student, undefined);
+    setDone(true);
+    setTimeout(onClose, 1200);
+  };
+
+  const handleSubmitWithFees = () => {
+    const e: Record<string, string> = {};
+    if (!feeForm.feeName.trim()) e.feeName = t.students.required;
+    const amt = Number(feeForm.amountDue);
+    if (!feeForm.amountDue || isNaN(amt) || amt <= 0) e.amountDue = t.students.required;
+    setFeeErrors(e);
+    if (Object.keys(e).length > 0) return;
+
+    const student = buildStudent();
+    if (!student) return;
+    onAdd(student, {
+      feeName:      feeForm.feeName.trim(),
+      amountDue:    Number(feeForm.amountDue),
+      dueDate:      feeForm.dueDate || undefined,
+      academicYear: feeForm.academicYear.trim() || undefined,
+    });
     setDone(true);
     setTimeout(onClose, 1200);
   };
@@ -236,9 +278,12 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
                   onChange={e => set('classId', e.target.value)}
                   className={`w-full py-2.5 px-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${errors.classId ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                 >
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} — {c.gradeLevelName}</option>
-                  ))}
+                  {classes.length === 0
+                    ? <option value="" disabled>No classes yet — add a class first</option>
+                    : classes.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} — {c.gradeLevelName}</option>
+                      ))
+                  }
                 </select>
                 {errors.classId && <p className="text-red-500 text-xs mt-1">{errors.classId}</p>}
               </div>
@@ -326,6 +371,67 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
             </div>
           )}
 
+          {/* ── Step 4: Fees ─────────────────────────────────── */}
+          {step === 'fees' && !done && (
+            <div className="space-y-4">
+              <div className="bg-indigo-50 rounded-xl p-3.5 text-sm text-indigo-700 font-medium">
+                {t.common.active === 'Active'
+                  ? 'Add an initial fee record for this student, or skip for now.'
+                  : 'Ajoutez un dossier de frais pour cet élève, ou ignorez pour l\'instant.'}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  {t.fees.fee ?? 'Fee Name'}<span className="text-red-500 ml-0.5">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={feeForm.feeName}
+                  onChange={e => { setFeeForm(p => ({ ...p, feeName: e.target.value })); setFeeErrors(p => ({ ...p, feeName: '' })); }}
+                  placeholder={t.common.active === 'Active' ? 'e.g. School Fees 2025-2026' : 'ex : Scolarité 2025-2026'}
+                  className={`w-full py-2.5 px-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${feeErrors.feeName ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                />
+                {feeErrors.feeName && <p className="text-red-500 text-xs mt-1">{feeErrors.feeName}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    {t.common.active === 'Active' ? 'Amount Due (FCFA)' : 'Montant dû (FCFA)'}<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <input
+                    type="number" min={1}
+                    value={feeForm.amountDue}
+                    onChange={e => { setFeeForm(p => ({ ...p, amountDue: e.target.value })); setFeeErrors(p => ({ ...p, amountDue: '' })); }}
+                    placeholder="0"
+                    className={`w-full py-2.5 px-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${feeErrors.amountDue ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                  />
+                  {feeErrors.amountDue && <p className="text-red-500 text-xs mt-1">{feeErrors.amountDue}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    {t.common.active === 'Active' ? 'Academic Year' : 'Année académique'}
+                  </label>
+                  <input
+                    type="text"
+                    value={feeForm.academicYear}
+                    onChange={e => setFeeForm(p => ({ ...p, academicYear: e.target.value }))}
+                    className="w-full py-2.5 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  {t.fees.dueDate ?? 'Due Date'} ({t.common.active === 'Active' ? 'optional' : 'optionnel'})
+                </label>
+                <input
+                  type="date"
+                  value={feeForm.dueDate}
+                  onChange={e => setFeeForm(p => ({ ...p, dueDate: e.target.value }))}
+                  className="w-full py-2.5 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          )}
+
           {/* ── Success state ─────────────────────────────────── */}
           {done && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -351,7 +457,23 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
               {step === 'personal' ? t.common.cancel : (t.common.active === 'Active' ? '← Back' : '← Retour')}
             </button>
 
-            {step !== 'guardian' ? (
+            {step === 'fees' ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSkipFees}
+                  className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  {t.common.active === 'Active' ? 'Skip fees' : 'Ignorer les frais'}
+                </button>
+                <button
+                  onClick={handleSubmitWithFees}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <UserPlus size={15} />
+                  {t.common.active === 'Active' ? 'Add student + fees' : 'Élève + frais'}
+                </button>
+              </div>
+            ) : step !== 'guardian' ? (
               <button
                 onClick={next}
                 className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
@@ -360,11 +482,10 @@ export default function StudentAddModal({ onClose, onAdd, totalExisting }: Props
               </button>
             ) : (
               <button
-                onClick={handleSubmit}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                onClick={next}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
               >
-                <UserPlus size={15} />
-                {t.students.addStudent}
+                {t.common.active === 'Active' ? 'Next' : 'Suivant'} <ChevronRight size={15} />
               </button>
             )}
           </div>

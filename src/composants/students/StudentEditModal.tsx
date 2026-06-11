@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, CheckCircle } from 'lucide-react';
-import type { Student } from '../../types';
-import { classes } from '../../data/mockData';
+import type { Student, Class } from '../../types';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { api } from '../../api/client';
+import { mapClass } from '../../api/mappers';
 
 interface Props {
   student: Student;
@@ -30,8 +31,15 @@ function Field({
 
 export default function StudentEditModal({ student, onClose, onSave }: Props) {
   const { t } = useLanguage();
+  const [classes, setClasses] = useState<Class[]>([]);
   const [form, setForm] = useState<Student>({ ...student });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api.getClasses()
+      .then(data => setClasses(data.map(mapClass)))
+      .catch(console.error);
+  }, []);
 
   const update = <K extends keyof Student>(field: K, value: Student[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));

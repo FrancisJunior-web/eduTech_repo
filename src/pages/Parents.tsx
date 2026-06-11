@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, Phone, Users, AlertTriangle, CheckCircle2, UserCheck, Clock } from 'lucide-react';
-import { students, feeRecords } from '../data/mockData';
-import type { GuardianRel } from '../types';
+import type { GuardianRel, Student, FeeRecord } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { api } from '../api/client';
+import { mapStudent, mapFeeRecord } from '../api/mappers';
 
 // ── Derived types ─────────────────────────────────────────────────
 type FeeStatus = 'paid' | 'partial' | 'overdue' | 'pending' | 'mixed';
@@ -22,11 +23,12 @@ type GuardianRow = {
   feeStatus:    FeeStatus;
 };
 
-// ── Derive unique guardians from student records ──────────────────
-function deriveGuardians(): GuardianRow[] {
+// ── Derive unique guardians from student + fee records ───────────
+function deriveGuardians(students: Student[], feeRecords: FeeRecord[]): GuardianRow[] {
   const map = new Map<string, GuardianRow>();
 
   students.filter(s => s.isActive).forEach(s => {
+    if (!s.guardianName || !s.guardianPhone) return;
     const key = `${s.guardianName}__${s.guardianPhone}`;
     if (!map.has(key)) {
       map.set(key, {
@@ -65,16 +67,30 @@ function deriveGuardians(): GuardianRow[] {
   return Array.from(map.values());
 }
 
-const ALL_GUARDIANS = deriveGuardians();
-
 // ── Component ─────────────────────────────────────────────────────
 export default function Parents() {
   const { t, lang } = useLanguage();
   const lbl = (en: string, fr: string) => lang === 'fr' ? fr : en;
 
+  const [students,  setStudents]  = useState<Student[]>([]);
+  const [fees,      setFees]      = useState<FeeRecord[]>([]);
+  const [loading,   setLoading]   = useState(true);
+
   const [search,       setSearch]       = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [multiOnly,    setMultiOnly]    = useState(false);
+
+  useEffect(() => {
+    Promise.all([api.getStudents(), api.getFees()])
+      .then(([sts, frs]) => {
+        setStudents(sts.map(mapStudent));
+        setFees(frs.map(mapFeeRecord));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const ALL_GUARDIANS = useMemo(() => deriveGuardians(students, fees), [students, fees]);
 
   // Stats
   const totalFamilies = ALL_GUARDIANS.length;
@@ -117,7 +133,7 @@ export default function Parents() {
       const matchMulti = !multiOnly || g.children.length > 1;
       return matchSearch && matchFee && matchMulti;
     });
-  }, [search, filterStatus, multiOnly]);
+  }, [ALL_GUARDIANS, search, filterStatus, multiOnly]);
 
   const relLabel = (rel: GuardianRel): string => {
     const map: Record<GuardianRel, [string, string]> = {
@@ -202,6 +218,14 @@ export default function Parents() {
       glow:     'hover:shadow-purple-200',
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,13 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Save, CheckCircle, X, Pencil, Plus, RotateCcw, Download,
   Settings2, ChevronDown, ChevronUp, Coffee,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { classes, subjects as defaultSubjects, teachers } from '../data/mockData';
-import type { Subject } from '../types';
+import { subjects as defaultSubjects } from '../data/mockData';
+import type { Subject, Class, Teacher } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { Calendar } from 'lucide-react';
+import { api } from '../api/client';
+import { mapClass, mapTeacher } from '../api/mappers';
 
 // ── Types ─────────────────────────────────────────────────────────
 type ScheduleSlot = {
@@ -94,18 +97,18 @@ const getActiveDays    = (cfg: ScheduleConfig) => cfg.includeSaturday ? ALL_DAYS
 const getTeachingSlots = (slots: ScheduleSlot[]) => slots.filter(s => s.type === 'period');
 
 // Build initial grids from scratch using sample data
-function buildSampleGrids(cfg: ScheduleConfig, subjectList: Subject[]): AllGrids {
+function buildSampleGrids(cfg: ScheduleConfig, subjectList: Subject[], classList: Class[]): AllGrids {
   const slots = getTeachingSlots(cfg.slots);
   const days  = getActiveDays(cfg);
   const subs  = subjectList.map(s => s.name);
   const result: AllGrids = {};
-  classes.forEach((cls, ci) => {
+  classList.forEach((cls, ci) => {
     result[cls.id] = {};
     days.forEach((day, di) => {
       result[cls.id][day] = {};
       slots.forEach((slot, pi) => {
         result[cls.id][day][slot.key] = {
-          subject:     subs[(pi + di + ci) % subs.length],
+          subject:     subs.length > 0 ? subs[(pi + di + ci) % subs.length] : '',
           teacherName: '',
           room:        cls.room,
         };
@@ -117,11 +120,11 @@ function buildSampleGrids(cfg: ScheduleConfig, subjectList: Subject[]): AllGrids
 
 // Reconcile existing grids against a (possibly changed) schedule.
 // Adds missing keys as null, removes obsolete keys, adds/removes days.
-function reconcileGrids(grids: AllGrids, cfg: ScheduleConfig): AllGrids {
+function reconcileGrids(grids: AllGrids, cfg: ScheduleConfig, classList: Class[]): AllGrids {
   const teachingKeys = new Set(getTeachingSlots(cfg.slots).map(s => s.key));
   const days = getActiveDays(cfg);
   const result: AllGrids = {};
-  classes.forEach(cls => {
+  classList.forEach(cls => {
     const existing = grids[cls.id] ?? {};
     result[cls.id] = {};
     days.forEach(day => {
@@ -367,12 +370,13 @@ function ScheduleConfigPanel({
 
 // ── Cell Editor Modal ─────────────────────────────────────────────
 function CellEditorModal({
-  editing, current, classRoom, subjects, onApply, onClear, onClose,
+  editing, current, classRoom, subjects, teachers, onApply, onClear, onClose,
 }: {
   editing: Editing;
   current: Cell | null;
   classRoom: string;
   subjects: Subject[];
+  teachers: Teacher[];
   onApply: (cell: Cell) => void;
   onClear: () => void;
   onClose: () => void;
@@ -463,22 +467,42 @@ export default function Timetable() {
   const { t, lang } = useLanguage();
   const lbl = (en: string, fr: string) => lang === 'fr' ? fr : en;
 
+  const [classes,  setClasses]  = useState<Class[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loading,  setLoading]  = useState(true);
+
   const [subjects]     = useState<Subject[]>(loadSubjects);
   const [schedule, setScheduleRaw] = useState<ScheduleConfig>(loadSchedule);
-  const [allGrids, setAllGrids]    = useState<AllGrids>(() => {
-    const cfg   = loadSchedule();
-    const saved = loadGrids();
-    return saved ? reconcileGrids(saved, cfg) : buildSampleGrids(cfg, loadSubjects());
-  });
-  const [classId,    setClassId]    = useState(classes[0].id);
+  const [allGrids, setAllGrids]    = useState<AllGrids>(() => loadGrids() ?? {});
+  const [classId,    setClassId]    = useState('');
   const [editing,    setEditing]    = useState<Editing | null>(null);
   const [saved,      setSaved]      = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
 
+  useEffect(() => {
+    Promise.all([api.getClasses(), api.getTeachers({ isActive: 'true' })])
+      .then(([cls, tcs]) => {
+        const mappedCls = cls.map(mapClass);
+        const mappedTcs = tcs.map(mapTeacher);
+        setClasses(mappedCls);
+        setTeachers(mappedTcs);
+        if (mappedCls.length > 0) {
+          setClassId(mappedCls[0].id);
+          setAllGrids(prev => {
+            const cfg  = loadSchedule();
+            const saved = Object.keys(prev).length > 0 ? prev : null;
+            return saved ? reconcileGrids(saved, cfg, mappedCls) : buildSampleGrids(cfg, loadSubjects(), mappedCls);
+          });
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
   const activeDays    = getActiveDays(schedule);
   const teachingSlots = getTeachingSlots(schedule.slots);
 
-  const cls  = classes.find(c => c.id === classId)!;
+  const cls  = classes.find(c => c.id === classId);
   const grid = allGrids[classId] ?? {};
 
   // Day display labels
@@ -510,8 +534,8 @@ export default function Timetable() {
   const handleScheduleChange = useCallback((next: ScheduleConfig) => {
     saveScheduleToDisk(next);
     setScheduleRaw(next);
-    setAllGrids(prev => reconcileGrids(prev, next));
-  }, []);
+    setAllGrids(prev => reconcileGrids(prev, next, classes));
+  }, [classes]);
 
   const handleCellClick = (day: string, periodKey: string) => {
     setEditing({
@@ -566,7 +590,7 @@ export default function Timetable() {
   const filledCells = activeDays.reduce((n, day) =>
     n + teachingSlots.filter(s => grid[day]?.[s.key] != null).length, 0);
 
-  const termLabel = lbl('Term 2 · 2025/2026', 'Trimestre 2 · 2025/2026');
+  const termLabel = lbl('Current Timetable', 'Emploi du temps actuel');
 
   // ── PDF export ────────────────────────────────────────────────
   const handleDownload = () => {
@@ -577,7 +601,7 @@ export default function Timetable() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${t.timetable.weeklyTimetable} — ${cls.name}`, 10, 9);
+    doc.text(`${t.timetable.weeklyTimetable} — ${cls?.name ?? ''}`, 10, 9);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text(termLabel, 10, 16);
@@ -671,13 +695,33 @@ export default function Timetable() {
     doc.setTextColor(148, 163, 184);
     doc.setFont('helvetica', 'normal');
     doc.text(new Date().toLocaleDateString('en-GB'), 10, pageH - 5);
-    if (cls.classTeacherName) {
+    if (cls?.classTeacherName) {
       doc.text(`${lbl('Class teacher', 'Prof. principal')}: ${cls.classTeacherName}`, 287, pageH - 5, { align: 'right' });
     }
-    doc.save(`${cls.name.replace(/\s+/g, '-')}-timetable.pdf`);
+    doc.save(`${(cls?.name ?? 'timetable').replace(/\s+/g, '-')}-timetable.pdf`);
   };
 
   // ── Render ────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (classes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+          <Calendar size={28} className="text-slate-400" />
+        </div>
+        <h3 className="text-slate-700 font-semibold text-lg mb-1">No classes yet</h3>
+        <p className="text-slate-400 text-sm max-w-xs">Add classes first before building the timetable.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
 
@@ -878,8 +922,9 @@ export default function Timetable() {
         <CellEditorModal
           editing={editing}
           current={grid[editing.day]?.[editing.periodKey] ?? null}
-          classRoom={cls.room}
+          classRoom={cls?.room ?? ''}
           subjects={subjects}
+          teachers={teachers}
           onApply={applyEdit}
           onClear={clearCell}
           onClose={() => setEditing(null)}

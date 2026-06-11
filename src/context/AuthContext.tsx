@@ -1,54 +1,52 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { api } from '../api/client';
 
 export interface AuthUser {
   name: string;
   email: string;
   role: string;
   initials: string;
+  token?: string;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
-const CREDENTIALS: Record<string, { password: string; user: AuthUser }> = {
-  'admin@edutech.com': {
-    password: 'admin123',
-    user: { name: 'Grace Moyo', email: 'admin@edutech.com', role: 'Head Teacher', initials: 'GM' },
-  },
-  'teacher@edutech.com': {
-    password: 'teacher123',
-    user: { name: 'Mr. Farai Ncube', email: 'teacher@edutech.com', role: 'Teacher', initials: 'FN' },
-  },
-  'secretary@edutech.com': {
-    password: 'secretary123',
-    user: { name: 'Mrs. Chipo Ndlovu', email: 'secretary@edutech.com', role: 'Secretary', initials: 'CN' },
-  },
-};
-
 const AuthContext = createContext<AuthContextValue>({
-  user: null, login: () => false, logout: () => {},
+  user: null, login: async () => false, logout: () => {},
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try { return JSON.parse(localStorage.getItem('auth_user') ?? 'null'); }
-    catch { return null; }
-  });
+const stored = (): AuthUser | null => {
+  try { return JSON.parse(localStorage.getItem('auth_user') ?? 'null'); }
+  catch { return null; }
+};
 
-  const login = (email: string, password: string): boolean => {
-    const entry = CREDENTIALS[email.toLowerCase().trim()];
-    if (entry && entry.password === password) {
-      setUser(entry.user);
-      localStorage.setItem('auth_user', JSON.stringify(entry.user));
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(stored);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await api.login(email, password);
+      const authUser: AuthUser = {
+        name:     res.user.name,
+        email:    res.user.email,
+        role:     res.user.role,
+        initials: res.user.initials,
+        token:    res.token,
+      };
+      setUser(authUser);
+      localStorage.setItem('auth_user', JSON.stringify(authUser));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
+    api.logout().catch(() => {});
     setUser(null);
     localStorage.removeItem('auth_user');
   };

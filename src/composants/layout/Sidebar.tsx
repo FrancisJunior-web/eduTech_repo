@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap,
   ClipboardCheck, FileText, Award, Wallet, Calendar, UserRound, Settings,
-  MessageSquare, Megaphone, Mail, MessageCircle, ChevronDown,
+  MessageSquare, Megaphone, Mail, MessageCircle, ChevronDown, BadgeDollarSign,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -21,7 +21,8 @@ export default function Sidebar() {
     { label: t.nav.dashboard,    to: '/dashboard',    icon: LayoutDashboard },
     { label: t.nav.students,     to: '/students',     icon: Users            },
     { label: t.nav.classes,      to: '/classes',      icon: BookOpen         },
-    { label: t.nav.teachers,     to: '/teachers',     icon: GraduationCap    },
+    { label: t.nav.teachers,       to: '/teachers',        icon: GraduationCap   },
+    { label: t.nav.teacherPayment, to: '/teacher-payment', icon: BadgeDollarSign },
     { label: t.nav.attendance,   to: '/attendance',   icon: ClipboardCheck   },
     { label: t.nav.assessments,  to: '/assessments',  icon: FileText         },
     { label: t.nav.reportCards,  to: '/report-cards', icon: Award            },

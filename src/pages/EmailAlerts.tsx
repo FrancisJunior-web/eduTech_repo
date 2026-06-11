@@ -11,13 +11,6 @@ interface Alert {
   status: 'sent' | 'pending' | 'failed';
 }
 
-const SAMPLE: Alert[] = [
-  { id: 1, subject: 'Fee Payment Reminder',        recipient: 'All Parents',   message: 'Dear Parent, this is a reminder that school fees for Term 2 are due on 15 June 2025.',                       sentAt: '2025-06-01 09:00', status: 'sent'    },
-  { id: 2, subject: 'Exam Timetable Released',     recipient: 'All Students',  message: 'The end-of-term examination timetable has been published. Please log in to view your schedule.',              sentAt: '2025-05-30 14:30', status: 'sent'    },
-  { id: 3, subject: 'Parent–Teacher Meeting',      recipient: 'Grade 3A',      message: 'You are invited to the parent–teacher meeting scheduled for Saturday 8 June 2025 at 9 AM.',                 sentAt: null,               status: 'pending' },
-  { id: 4, subject: 'Attendance Alert — Absent',   recipient: 'Mr. Farai N.',  message: 'Your child Tatenda was marked absent on 28 May 2025. Please contact the school if you have any queries.',   sentAt: '2025-05-28 11:00', status: 'failed'  },
-];
-
 const statusConfig = {
   sent:    { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', label: 'Sent'    },
   pending: { icon: Clock,        color: 'text-amber-600',   bg: 'bg-amber-50 border-amber-200',     label: 'Pending' },
@@ -28,7 +21,7 @@ export default function EmailAlerts() {
   const { lang } = useLanguage();
   const lbl = (en: string, fr: string) => lang === 'fr' ? fr : en;
 
-  const [alerts, setAlerts]   = useState<Alert[]>(SAMPLE);
+  const [alerts, setAlerts]   = useState<Alert[]>([]);
   const [search, setSearch]   = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | Alert['status']>('all');
   const [showNew, setShowNew] = useState(false);

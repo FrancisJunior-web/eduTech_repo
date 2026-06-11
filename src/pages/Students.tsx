@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, Eye, Pencil, Users, User, UserCheck } from 'lucide-react';
-import { students as initialStudents, classes } from '../data/mockData';
-import type { Student } from '../types';
+import type { Student, Class } from '../types';
 import { StatusBadge } from '../composants/ui/Badge';
 import { useLanguage } from '../i18n/LanguageContext';
 import StudentViewModal from '../composants/students/StudentViewModal';
 import StudentEditModal from '../composants/students/StudentEditModal';
 import StudentAddModal  from '../composants/students/StudentAddModal';
+import type { FeeData } from '../composants/students/StudentAddModal';
+import { api } from '../api/client';
+import { mapStudent, mapClass } from '../api/mappers';
 
 export default function Students() {
   const { t } = useLanguage();
 
-  // Local copy so edits are reflected without a backend
-  const [studentList, setStudentList] = useState<Student[]>(initialStudents);
+  const [studentList, setStudentList] = useState<Student[]>([]);
+  const [classes,     setClasses]     = useState<Class[]>([]);
+  const [loading,     setLoading]     = useState(true);
 
   const [search, setSearch]               = useState('');
   const [filterClass, setFilterClass]     = useState('');
@@ -22,6 +25,16 @@ export default function Students() {
   const [viewing, setViewing]   = useState<Student | null>(null);
   const [editing, setEditing]   = useState<Student | null>(null);
   const [adding,  setAdding]    = useState(false);
+
+  useEffect(() => {
+    Promise.all([api.getStudents(), api.getClasses()])
+      .then(([sts, cls]) => {
+        setStudentList(sts.map(mapStudent));
+        setClasses(cls.map(mapClass));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = studentList.filter(s => {
     const name = `${s.firstName} ${s.lastName} ${s.studentNumber}`.toLowerCase();
@@ -35,13 +48,34 @@ export default function Students() {
     return matchSearch && matchClass && matchGender && matchKpi;
   });
 
-  const handleSave = (updated: Student) => {
-    setStudentList(prev => prev.map(s => s.id === updated.id ? updated : s));
+  const handleSave = async (updated: Student) => {
+    try {
+      const result = await api.updateStudent(updated.id, updated);
+      setStudentList(prev => prev.map(s => s.id === updated.id ? mapStudent(result) : s));
+    } catch (err) {
+      console.error('Failed to update student:', err);
+    }
     setEditing(null);
   };
 
-  const handleAdd = (newStudent: Student) => {
-    setStudentList(prev => [newStudent, ...prev]);
+  const handleAdd = async (newStudent: Student, fee?: FeeData) => {
+    try {
+      const result = await api.createStudent(newStudent);
+      const mapped = mapStudent(result);
+      setStudentList(prev => [mapped, ...prev]);
+
+      if (fee && fee.feeName && fee.amountDue > 0) {
+        await api.createFee({
+          studentId:    mapped.id,
+          feeName:      fee.feeName,
+          amountDue:    fee.amountDue,
+          dueDate:      fee.dueDate,
+          academicYear: fee.academicYear,
+        } as Parameters<typeof api.createFee>[0]);
+      }
+    } catch (err) {
+      console.error('Failed to create student:', err);
+    }
   };
 
   // Open Edit from inside the View modal
@@ -319,6 +353,7 @@ export default function Students() {
           onClose={() => setAdding(false)}
           onAdd={handleAdd}
           totalExisting={studentList.length}
+          classes={classes}
         />
       )}
     </div>

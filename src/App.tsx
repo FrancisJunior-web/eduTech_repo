@@ -15,7 +15,8 @@ import Parents         from './pages/Parents';
 import Settings        from './pages/Settings';
 import Announcements   from './pages/Announcements';
 import EmailAlerts     from './pages/EmailAlerts';
-import DiscussionForums from './pages/DiscussionForums';
+import DiscussionForums  from './pages/DiscussionForums';
+import TeacherPayment   from './pages/TeacherPayment';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="announcements"     element={<Announcements    />} />
         <Route path="email-alerts"      element={<EmailAlerts      />} />
         <Route path="discussion-forums" element={<DiscussionForums />} />
+        <Route path="teacher-payment"   element={<TeacherPayment  />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

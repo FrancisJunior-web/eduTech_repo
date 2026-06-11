@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, BookOpen, CheckCircle } from 'lucide-react';
-import type { Class } from '../../types';
-import { gradeLevels, teachers } from '../../data/mockData';
+import type { Class, Teacher } from '../../types';
+import { gradeLevels } from '../../data/mockData';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { api } from '../../api/client';
+import { mapTeacher } from '../../api/mappers';
 
 interface Props {
   onClose: () => void;
@@ -49,12 +51,20 @@ function Field({
 export default function AddClassModal({ onClose, onAdd }: Props) {
   const { t, lang } = useLanguage();
 
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+
+  useEffect(() => {
+    api.getTeachers({ isActive: 'true' })
+      .then(data => setTeachers(data.map(mapTeacher)))
+      .catch(console.error);
+  }, []);
+
   const [form, setForm] = useState<FormState>({
     name: '',
-    gradeLevelId: gradeLevels[2].id,   // default to Grade 1
+    gradeLevelId: gradeLevels[2]?.id ?? gradeLevels[0]?.id ?? '',
     room: '',
     capacity: '40',
-    classTeacherId: teachers[0].id,
+    classTeacherId: '',
   });
   const [errors, setErrors] = useState<Errors>({});
   const [done, setDone] = useState(false);
@@ -89,7 +99,7 @@ export default function AddClassModal({ onClose, onAdd }: Props) {
     if (!validate()) return;
 
     const gl      = gradeLevels.find(g => g.id === form.gradeLevelId)!;
-    const teacher = teachers.find(tc => tc.id === form.classTeacherId)!;
+    const teacher = teachers.find(tc => tc.id === form.classTeacherId);
 
     const newClass: Class = {
       id:               `c-${Date.now()}`,
@@ -98,8 +108,8 @@ export default function AddClassModal({ onClose, onAdd }: Props) {
       name:             form.name.trim(),
       capacity:         Number(form.capacity),
       room:             form.room.trim(),
-      classTeacherId:   teacher.id,
-      classTeacherName: `${teacher.firstName} ${teacher.lastName}`,
+      classTeacherId:   teacher?.id ?? '',
+      classTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
       enrolled:         0,
     };
 
